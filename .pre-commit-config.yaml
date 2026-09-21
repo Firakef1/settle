@@ -1,0 +1,67 @@
+# Language-agnostic quality gates for this repository.
+# Install locally:
+#   macOS/Linux: ./scripts/setup-dev.sh
+#   Windows:     powershell -File scripts/setup-dev.ps1
+# Docs: docs/WORKFLOW.md
+
+default_language_version:
+  python: python3
+
+default_stages: [pre-commit]
+
+ci:
+  autofix_prs: true
+  autoupdate_schedule: monthly
+
+repos:
+  # --- Generic file hygiene (no language toolchain required) ---
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '\.md$'
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: ["--unsafe"]
+      - id: check-json
+      - id: check-toml
+      - id: check-xml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+      - id: check-case-conflict
+      - id: check-symlinks
+      - id: destroyed-symlinks
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+      - id: detect-private-key
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      # Block commits made while checked out on protected branches
+      - id: no-commit-to-branch
+        args: ["--branch", "main", "--branch", "master"]
+
+  # Keep GitHub Actions workflows valid
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.7
+    hooks:
+      - id: actionlint
+
+  # --- Local policy hooks (Python = macOS / Linux / Windows) ---
+  - repo: local
+    hooks:
+      - id: conventional-commit-message
+        name: conventional commit message
+        language: python
+        entry: python scripts/git-hooks/commit_msg.py
+        stages: [commit-msg]
+        always_run: true
+        pass_filenames: true
+
+      - id: block-push-to-protected-branches
+        name: block push / force-push to main/master
+        language: python
+        entry: python scripts/git-hooks/pre_push.py
+        stages: [pre-push]
+        always_run: true
+        pass_filenames: false

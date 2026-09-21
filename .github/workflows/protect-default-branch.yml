@@ -1,0 +1,45 @@
+name: Protect default branch
+
+# Remote alarm if someone updates main/master outside a pull request.
+# True prevention = GitHub ruleset/branch protection
+#   (./scripts/enable-branch-protection.sh or .ps1).
+# This workflow cannot undo a push; it fails loudly so the mistake is visible.
+on:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  no-direct-push:
+    name: no direct push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require that this commit came from a pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+
+          prs="$(gh api "repos/${REPO}/commits/${SHA}/pulls" \
+            -H "Accept: application/vnd.github.groot-preview+json" \
+            --jq 'length' 2>/dev/null || echo 0)"
+
+          if [[ "${prs}" != "0" ]]; then
+            echo "OK: commit ${SHA} is associated with ${prs} pull request(s)."
+            exit 0
+          fi
+
+          parents="$(gh api "repos/${REPO}/commits/${SHA}" --jq '.parents | length')"
+          if [[ "${parents}" == "0" ]]; then
+            echo "OK: root commit — bootstrap allowed."
+            exit 0
+          fi
+
+          echo "::error::Direct push to the default branch by '${ACTOR}' (commit ${SHA}). Local hooks may have been skipped (--no-verify) or not installed. Enable branch protection with ./scripts/enable-branch-protection.sh and open a PR from a feature branch."
+          exit 1
