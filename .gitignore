@@ -1,0 +1,81 @@
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+Desktop.ini
+
+# Editors / IDEs
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# Secrets & local env (never commit)
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.p12
+*.pfx
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+credentials.json
+secrets.json
+*.key
+
+# Logs & temp
+*.log
+logs/
+tmp/
+temp/
+.cache/
+*.tmp
+*.temp
+
+# Coverage / reports (language-agnostic paths)
+coverage/
+.coverage
+htmlcov/
+.nyc_output/
+test-results/
+junit.xml
+
+# Dependency / build artifacts (common names; add more when stack is chosen)
+node_modules/
+dist/
+build/
+out/
+target/
+vendor/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.tox/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.turbo/
+.next/
+.nuxt/
+.svelte-kit/
+
+# pre-commit / local tool installs
+.pre-commit-cache/
+.tools/
+
+# Local overrides
+*.local
+local.*
