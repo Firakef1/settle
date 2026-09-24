@@ -33,7 +33,7 @@ jobs:
           extra_args: --all-files --show-diff-on-failure
         env:
           # commit-msg / pre-push stages are local-only; skip them in CI file scan
-          SKIP: conventional-commit-message,block-push-to-protected-branches
+          SKIP: conventional-commit-message,block-push-to-protected-branches,no-commit-to-branch
 
   pr-conventions:
     name: PR conventions
