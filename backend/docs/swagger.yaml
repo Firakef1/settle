@@ -1,0 +1,240 @@
+basePath: /api/v1
+definitions:
+  github_com_Firakef1_settle_backend_internal_auth_dto.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  github_com_Firakef1_settle_backend_internal_auth_dto.LoginResponse:
+    properties:
+      orgs:
+        items:
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.OrgMembershipDTO'
+        type: array
+      refresh_token:
+        type: string
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.UserResponseDTO'
+    type: object
+  github_com_Firakef1_settle_backend_internal_auth_dto.LogoutRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  github_com_Firakef1_settle_backend_internal_auth_dto.OrgMembershipDTO:
+    properties:
+      department:
+        type: string
+      org_id:
+        type: string
+      org_name:
+        type: string
+      org_slug:
+        type: string
+      role:
+        type: string
+    type: object
+  github_com_Firakef1_settle_backend_internal_auth_dto.RefreshRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  github_com_Firakef1_settle_backend_internal_auth_dto.SignupRequest:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - name
+    - password
+    type: object
+  github_com_Firakef1_settle_backend_internal_auth_dto.UserResponseDTO:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      status:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: Settle backend REST API.
+  title: Settle API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user and returns access and refresh tokens.
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: User login
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Revokes the user's tokens. Optionally invalidates the refresh token
+        if provided.
+      parameters:
+      - description: Refresh token to revoke
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.LogoutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: User logout
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Uses a valid refresh token to issue a new access token and a rotated
+        refresh token.
+      parameters:
+      - description: Refresh token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Refresh access token
+      tags:
+      - auth
+  /auth/signup:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user account and returns the user object.
+      parameters:
+      - description: Signup details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.SignupRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user
+      tags:
+      - auth
+securityDefinitions:
+  BearerAuth:
+    description: 'Enter your Bearer token in the format: Bearer {token}'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
