@@ -11,4 +11,3 @@ CREATE TABLE IF NOT EXISTS organizations (
 ALTER TABLE organizations ADD COLUMN IF NOT EXISTS plan VARCHAR(50) NOT NULL DEFAULT 'free';
 
 CREATE INDEX IF NOT EXISTS idx_organizations_slug ON organizations(slug);
-

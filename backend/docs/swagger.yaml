@@ -1,6 +1,144 @@
 basePath: /api/v1
 definitions:
-  github_com_Firakef1_settle_backend_internal_auth_dto.LoginRequest:
+  dto.AcceptInviteRequest:
+    properties:
+      name:
+        type: string
+      password:
+        type: string
+    type: object
+  dto.AgingBreakdown:
+    properties:
+      0_to_3_days:
+        type: integer
+      3_to_7_days:
+        type: integer
+      7_plus_days:
+        type: integer
+    type: object
+  dto.AuditLogItem:
+    properties:
+      action:
+        type: string
+      actor_id:
+        type: string
+      actor_name:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      metadata:
+        additionalProperties: {}
+        type: object
+      org_id:
+        type: string
+      target_id:
+        type: string
+    type: object
+  dto.AuditLogListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.AuditLogItem'
+        type: array
+      pagination:
+        $ref: '#/definitions/dto.AuditPagination'
+    type: object
+  dto.AuditPagination:
+    properties:
+      has_more:
+        type: boolean
+      limit:
+        type: integer
+      offset:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+    type: object
+  dto.CreateOrgRequest:
+    properties:
+      currency:
+        type: string
+      name:
+        type: string
+    required:
+    - currency
+    - name
+    type: object
+  dto.DashboardSummaryResponse:
+    properties:
+      aging_breakdown:
+        $ref: '#/definitions/dto.AgingBreakdown'
+      critical_count:
+        type: integer
+      escalated_items:
+        items:
+          $ref: '#/definitions/dto.EscalatedItem'
+        type: array
+      pending_count:
+        type: integer
+      urgency_breakdown:
+        $ref: '#/definitions/dto.UrgencyBreakdown'
+      urgent_count:
+        type: integer
+    type: object
+  dto.EscalatedItem:
+    properties:
+      amount:
+        type: number
+      created_at:
+        type: string
+      days_pending:
+        type: integer
+      id:
+        type: string
+      requester_id:
+        type: string
+      requester_name:
+        type: string
+      urgency:
+        type: string
+    type: object
+  dto.FinancialStats:
+    properties:
+      currency:
+        type: string
+      this_month_spent:
+        type: number
+      total_spent:
+        type: number
+    type: object
+  dto.InviteRequest:
+    properties:
+      email:
+        type: string
+      role:
+        type: string
+    required:
+    - email
+    - role
+    type: object
+  dto.InviteResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      expires_at:
+        type: string
+      id:
+        type: string
+      org_id:
+        type: string
+      role:
+        type: string
+      token:
+        type: string
+    type: object
+  dto.LoginRequest:
     properties:
       email:
         type: string
@@ -10,27 +148,51 @@ definitions:
     - email
     - password
     type: object
-  github_com_Firakef1_settle_backend_internal_auth_dto.LoginResponse:
+  dto.LoginResponse:
     properties:
       orgs:
         items:
-          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.OrgMembershipDTO'
+          $ref: '#/definitions/dto.OrgMembershipDTO'
         type: array
       refresh_token:
         type: string
       token:
         type: string
       user:
-        $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.UserResponseDTO'
+        $ref: '#/definitions/dto.UserResponseDTO'
     type: object
-  github_com_Firakef1_settle_backend_internal_auth_dto.LogoutRequest:
+  dto.LogoutRequest:
     properties:
       refresh_token:
         type: string
     required:
     - refresh_token
     type: object
-  github_com_Firakef1_settle_backend_internal_auth_dto.OrgMembershipDTO:
+  dto.MemberCounts:
+    properties:
+      finance:
+        type: integer
+      org_admin:
+        type: integer
+      staff:
+        type: integer
+      total:
+        type: integer
+    type: object
+  dto.MemberResponse:
+    properties:
+      email:
+        type: string
+      joined_at:
+        type: string
+      name:
+        type: string
+      role:
+        type: string
+      user_id:
+        type: string
+    type: object
+  dto.OrgMembershipDTO:
     properties:
       department:
         type: string
@@ -43,14 +205,95 @@ definitions:
       role:
         type: string
     type: object
-  github_com_Firakef1_settle_backend_internal_auth_dto.RefreshRequest:
+  dto.OrgResponse:
+    properties:
+      created_at:
+        type: string
+      currency:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      plan:
+        type: string
+      slug:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.OrgStatsResponse:
+    properties:
+      financials:
+        $ref: '#/definitions/dto.FinancialStats'
+      member_counts:
+        $ref: '#/definitions/dto.MemberCounts'
+      org_id:
+        type: string
+      plan_usage:
+        $ref: '#/definitions/dto.PlanUsageStats'
+      request_stats:
+        $ref: '#/definitions/dto.RequestStats'
+    type: object
+  dto.Plan:
+    properties:
+      features:
+        items:
+          type: string
+        type: array
+      id:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+      request_limit:
+        description: 0 represents unlimited
+        type: integer
+      user_limit:
+        description: 0 represents unlimited
+        type: integer
+    type: object
+  dto.PlanUsageStats:
+    properties:
+      current_plan:
+        type: string
+      request_limit:
+        description: 0 = unlimited
+        type: integer
+      requests_this_month:
+        type: integer
+      user_count:
+        type: integer
+      user_limit:
+        description: 0 = unlimited
+        type: integer
+    type: object
+  dto.RefreshRequest:
     properties:
       refresh_token:
         type: string
     required:
     - refresh_token
     type: object
-  github_com_Firakef1_settle_backend_internal_auth_dto.SignupRequest:
+  dto.RequestStats:
+    properties:
+      approved:
+        type: integer
+      failed:
+        type: integer
+      paid:
+        type: integer
+      pending:
+        type: integer
+      rejected:
+        type: integer
+      total:
+        type: integer
+      withdrawn:
+        type: integer
+    type: object
+  dto.SignupRequest:
     properties:
       email:
         type: string
@@ -64,7 +307,46 @@ definitions:
     - name
     - password
     type: object
-  github_com_Firakef1_settle_backend_internal_auth_dto.UserResponseDTO:
+  dto.UpdateOrgRequest:
+    properties:
+      currency:
+        type: string
+      name:
+        type: string
+    type: object
+  dto.UpdatePlanRequest:
+    properties:
+      plan:
+        type: string
+    required:
+    - plan
+    type: object
+  dto.UpdatePlanResponse:
+    properties:
+      org_id:
+        type: string
+      plan:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.UpdateRoleRequest:
+    properties:
+      role:
+        type: string
+    required:
+    - role
+    type: object
+  dto.UrgencyBreakdown:
+    properties:
+      critical:
+        type: integer
+      routine:
+        type: integer
+      urgent:
+        type: integer
+    type: object
+  dto.UserResponseDTO:
     properties:
       created_at:
         type: string
@@ -94,14 +376,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.LoginRequest'
+          $ref: '#/definitions/dto.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.LoginResponse'
+            $ref: '#/definitions/dto.LoginResponse'
         "400":
           description: Bad Request
           schema:
@@ -134,7 +416,7 @@ paths:
         in: body
         name: request
         schema:
-          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.LogoutRequest'
+          $ref: '#/definitions/dto.LogoutRequest'
       produces:
       - application/json
       responses:
@@ -161,14 +443,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.RefreshRequest'
+          $ref: '#/definitions/dto.RefreshRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.LoginResponse'
+            $ref: '#/definitions/dto.LoginResponse'
         "400":
           description: Bad Request
           schema:
@@ -201,7 +483,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.SignupRequest'
+          $ref: '#/definitions/dto.SignupRequest'
       produces:
       - application/json
       responses:
@@ -231,6 +513,699 @@ paths:
       summary: Register a new user
       tags:
       - auth
+  /v1/billing/plans:
+    get:
+      description: Returns all available subscription plans with pricing, feature
+        sets, and request/user limits. Public endpoint.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              items:
+                $ref: '#/definitions/dto.Plan'
+              type: array
+            type: object
+      summary: Get available subscription plans
+      tags:
+      - billing
+  /v1/dashboard/summary:
+    get:
+      description: 'Returns high-level organization overview: pending requests count,
+        urgency breakdown, aging breakdown, and escalated items. Accessible by org_admin
+        and finance roles.'
+      parameters:
+      - description: Organization ID (optional if present in JWT token)
+        in: query
+        name: org_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/dto.DashboardSummaryResponse'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get dashboard summary overview
+      tags:
+      - dashboard
+  /v1/invitations/{token}/accept:
+    post:
+      consumes:
+      - application/json
+      description: Public endpoint. Validates token existence and expiry. Either registers
+        a new user or links an existing account, then inserts them into org_members
+        with the pre-assigned role within a single transaction.
+      parameters:
+      - description: Invitation Token
+        in: path
+        name: token
+        required: true
+        type: string
+      - description: Accept invitation payload
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/dto.AcceptInviteRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/dto.MemberResponse'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Accept organization invitation
+      tags:
+      - invitations
+  /v1/organizations:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new organization row with an auto-generated slug, inserts
+        the creator into org_members with role org_admin, and writes an audit log
+        in a single transaction.
+      parameters:
+      - description: Organization creation payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateOrgRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/dto.OrgResponse'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create an organization
+      tags:
+      - organizations
+  /v1/organizations/{id}:
+    get:
+      description: Returns organization profile. Scoped to members of that organization
+        only.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/dto.OrgResponse'
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get organization profile
+      tags:
+      - organizations
+    put:
+      consumes:
+      - application/json
+      description: Updates organization name and/or currency. Allowed for org_admin
+        only. Currency must be USD, EUR, or GBP.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Organization update payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateOrgRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/dto.OrgResponse'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update organization
+      tags:
+      - organizations
+  /v1/organizations/{id}/audit-log:
+    get:
+      description: Queries and paginates immutable audit logs for an organization.
+        Accessible by org_admin and finance roles.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Filter by action type
+        in: query
+        name: action
+        type: string
+      - description: Filter by actor user ID
+        in: query
+        name: actor_id
+        type: string
+      - description: Filter by start timestamp (RFC3339)
+        in: query
+        name: start_date
+        type: string
+      - description: Filter by end timestamp (RFC3339)
+        in: query
+        name: end_date
+        type: string
+      - description: Page number (defaults to 1)
+        in: query
+        name: page
+        type: integer
+      - description: Items per page (defaults to 20, max 100)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.AuditLogListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Query immutable audit logs
+      tags:
+      - audit
+  /v1/organizations/{id}/invitations:
+    post:
+      consumes:
+      - application/json
+      description: Generates a cryptographically secure token (via crypto/rand), stores
+        it with an expiry (7 days TTL), and assigns a role (staff or finance).
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Invitation creation payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.InviteRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/dto.InviteResponse'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create organization invitation
+      tags:
+      - invitations
+  /v1/organizations/{id}/members:
+    get:
+      description: Returns all members of an organization. Accessible by org_admin
+        and finance roles.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              items:
+                $ref: '#/definitions/dto.MemberResponse'
+              type: array
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List organization members
+      tags:
+      - members
+  /v1/organizations/{id}/members/{uid}:
+    delete:
+      description: Removes a member from an organization. Returns 403 Forbidden if
+        the member is the last org_admin.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User ID to remove
+        in: path
+        name: uid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Remove organization member
+      tags:
+      - members
+  /v1/organizations/{id}/members/{uid}/role:
+    put:
+      consumes:
+      - application/json
+      description: Switches role between staff and finance. Cannot demote the member
+        if they are the last org_admin.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User ID whose role is being changed
+        in: path
+        name: uid
+        required: true
+        type: string
+      - description: New role payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update member role
+      tags:
+      - members
+  /v1/organizations/{id}/plan:
+    put:
+      consumes:
+      - application/json
+      description: Updates an organization's subscription plan (free, starter, pro).
+        Allowed for org_admin only.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Plan update payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdatePlanRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/dto.UpdatePlanResponse'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update organization subscription plan
+      tags:
+      - billing
+  /v1/organizations/{id}/stats:
+    get:
+      description: Returns aggregated organization statistics (member counts, request
+        totals, spending, plan usage). Accessible by org_admin and finance roles.
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/dto.OrgStatsResponse'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get organization metrics & statistics
+      tags:
+      - dashboard
 securityDefinitions:
   BearerAuth:
     description: 'Enter your Bearer token in the format: Bearer {token}'
