@@ -25,6 +25,7 @@ type OrgService interface {
 	CreateOrg(ctx context.Context, userID string, req dto.CreateOrgRequest) (*dto.OrgResponse, error)
 	GetOrg(ctx context.Context, orgID string, callerUserID string) (*dto.OrgResponse, error)
 	UpdateOrg(ctx context.Context, orgID string, actorID string, req dto.UpdateOrgRequest) (*dto.OrgResponse, error)
+	UpdatePlan(ctx context.Context, orgID string, actorID string, newPlan string) (*dto.OrgResponse, error)
 }
 
 type orgService struct {
@@ -106,6 +107,7 @@ func (s *orgService) CreateOrg(ctx context.Context, userID string, req dto.Creat
 		Name:      strings.TrimSpace(req.Name),
 		Slug:      slug,
 		Currency:  currency,
+		Plan:      "free",
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -120,6 +122,7 @@ func (s *orgService) CreateOrg(ctx context.Context, userID string, req dto.Creat
 	metaBytes, _ := json.Marshal(map[string]any{
 		"org_name": org.Name,
 		"currency": org.Currency,
+		"plan":     org.Plan,
 	})
 
 	auditLog := &model.AuditLog{
@@ -152,11 +155,17 @@ func (s *orgService) CreateOrg(ctx context.Context, userID string, req dto.Creat
 		return nil, err
 	}
 
+	plan := org.Plan
+	if plan == "" {
+		plan = "free"
+	}
+
 	return &dto.OrgResponse{
 		ID:        org.ID,
 		Name:      org.Name,
 		Slug:      org.Slug,
 		Currency:  org.Currency,
+		Plan:      plan,
 		CreatedAt: org.CreatedAt,
 		UpdatedAt: org.UpdatedAt,
 	}, nil
@@ -178,11 +187,17 @@ func (s *orgService) GetOrg(ctx context.Context, orgID string, callerUserID stri
 		return nil, err
 	}
 
+	plan := org.Plan
+	if plan == "" {
+		plan = "free"
+	}
+
 	return &dto.OrgResponse{
 		ID:        org.ID,
 		Name:      org.Name,
 		Slug:      org.Slug,
 		Currency:  org.Currency,
+		Plan:      plan,
 		CreatedAt: org.CreatedAt,
 		UpdatedAt: org.UpdatedAt,
 	}, nil
@@ -235,11 +250,65 @@ func (s *orgService) UpdateOrg(ctx context.Context, orgID string, actorID string
 		})
 	}
 
+	plan := org.Plan
+	if plan == "" {
+		plan = "free"
+	}
+
 	return &dto.OrgResponse{
 		ID:        org.ID,
 		Name:      org.Name,
 		Slug:      org.Slug,
 		Currency:  org.Currency,
+		Plan:      plan,
+		CreatedAt: org.CreatedAt,
+		UpdatedAt: org.UpdatedAt,
+	}, nil
+}
+
+func (s *orgService) UpdatePlan(ctx context.Context, orgID string, actorID string, newPlan string) (*dto.OrgResponse, error) {
+	plan := strings.ToLower(strings.TrimSpace(newPlan))
+	if err := validator.ValidatePlan(plan); err != nil {
+		return nil, err
+	}
+
+	exec := s.getExecutor()
+	org, err := s.orgRepo.GetByID(ctx, exec, orgID)
+	if err != nil {
+		return nil, err
+	}
+
+	oldPlan := org.Plan
+	if oldPlan == "" {
+		oldPlan = "free"
+	}
+
+	if err := s.orgRepo.UpdatePlan(ctx, exec, orgID, plan); err != nil {
+		return nil, err
+	}
+	org.Plan = plan
+	org.UpdatedAt = time.Now().UTC()
+
+	metaBytes, _ := json.Marshal(map[string]any{
+		"old_plan": oldPlan,
+		"new_plan": plan,
+	})
+	_ = s.auditWriter.Write(ctx, exec, &model.AuditLog{
+		ID:        uuid.New().String(),
+		OrgID:     orgID,
+		ActorID:   actorID,
+		Action:    "plan_updated",
+		TargetID:  &orgID,
+		Metadata:  string(metaBytes),
+		CreatedAt: time.Now().UTC(),
+	})
+
+	return &dto.OrgResponse{
+		ID:        org.ID,
+		Name:      org.Name,
+		Slug:      org.Slug,
+		Currency:  org.Currency,
+		Plan:      org.Plan,
 		CreatedAt: org.CreatedAt,
 		UpdatedAt: org.UpdatedAt,
 	}, nil

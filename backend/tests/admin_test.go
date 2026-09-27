@@ -46,11 +46,12 @@ func (m *MockTxRunner) WithTx(ctx context.Context, fn func(tx *sql.Tx) error) er
 }
 
 type MockOrgRepo struct {
-	mu           sync.Mutex
-	Orgs         map[string]*model.Organization
-	FailCreateTx bool
-	FailGet      bool
-	FailUpdate   bool
+	mu             sync.Mutex
+	Orgs           map[string]*model.Organization
+	FailCreateTx   bool
+	FailGet        bool
+	FailUpdate     bool
+	FailUpdatePlan bool
 }
 
 func NewMockOrgRepo() *MockOrgRepo {
@@ -103,6 +104,20 @@ func (m *MockOrgRepo) Update(ctx context.Context, db repository.DBTX, org *model
 		return repository.ErrOrgNotFound
 	}
 	m.Orgs[org.ID] = org
+	return nil
+}
+
+func (m *MockOrgRepo) UpdatePlan(ctx context.Context, db repository.DBTX, orgID string, plan string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.FailUpdatePlan {
+		return errors.New("failed to update org plan")
+	}
+	org, ok := m.Orgs[orgID]
+	if !ok {
+		return repository.ErrOrgNotFound
+	}
+	org.Plan = plan
 	return nil
 }
 
@@ -336,6 +351,158 @@ func (m *MockAuditWriter) HasAction(action string) bool {
 	return false
 }
 
+func (m *MockAuditWriter) Query(ctx context.Context, db repository.DBTX, orgID string, filters dto.AuditFilters) ([]*dto.AuditLogItem, int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.FailNonTx {
+		return nil, 0, errors.New("audit query failed")
+	}
+	var filtered []*dto.AuditLogItem
+	for _, l := range m.Logs {
+		if l.OrgID != orgID {
+			continue
+		}
+		if filters.Action != "" && l.Action != filters.Action {
+			continue
+		}
+		if filters.ActorID != "" && l.ActorID != filters.ActorID {
+			continue
+		}
+		var meta map[string]any
+		if l.Metadata != "" {
+			_ = json.Unmarshal([]byte(l.Metadata), &meta)
+		}
+		if meta == nil {
+			meta = make(map[string]any)
+		}
+		filtered = append(filtered, &dto.AuditLogItem{
+			ID:        l.ID,
+			OrgID:     l.OrgID,
+			ActorID:   l.ActorID,
+			Action:    l.Action,
+			TargetID:  l.TargetID,
+			Metadata:  meta,
+			CreatedAt: l.CreatedAt,
+		})
+	}
+	total := len(filtered)
+	limit := filters.Limit
+	if limit <= 0 {
+		limit = 20
+	}
+	offset := filters.Offset
+	if offset > total {
+		offset = total
+	}
+	end := offset + limit
+	if end > total {
+		end = total
+	}
+	return filtered[offset:end], total, nil
+}
+
+type MockStatsRepo struct {
+	mu                  sync.Mutex
+	MemberRoleCounts    map[string]map[string]int
+	RequestStatusCounts map[string]map[string]int
+	TotalSpent          map[string]float64
+	ThisMonthSpent      map[string]float64
+	RequestsThisMonth   map[string]int
+	DashboardSummary    map[string]*dto.DashboardSummaryResponse
+	FailStats           bool
+	FailSummary         bool
+}
+
+func NewMockStatsRepo() *MockStatsRepo {
+	return &MockStatsRepo{
+		MemberRoleCounts:    make(map[string]map[string]int),
+		RequestStatusCounts: make(map[string]map[string]int),
+		TotalSpent:          make(map[string]float64),
+		ThisMonthSpent:      make(map[string]float64),
+		RequestsThisMonth:   make(map[string]int),
+		DashboardSummary:    make(map[string]*dto.DashboardSummaryResponse),
+	}
+}
+
+func (m *MockStatsRepo) GetMemberRoleCounts(ctx context.Context, db repository.DBTX, orgID string) (map[string]int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.FailStats {
+		return nil, errors.New("db error")
+	}
+	if counts, ok := m.MemberRoleCounts[orgID]; ok {
+		return counts, nil
+	}
+	return map[string]int{"org_admin": 1, "staff": 2, "finance": 1}, nil
+}
+
+func (m *MockStatsRepo) GetRequestStatusCounts(ctx context.Context, db repository.DBTX, orgID string) (map[string]int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.FailStats {
+		return nil, errors.New("db error")
+	}
+	if counts, ok := m.RequestStatusCounts[orgID]; ok {
+		return counts, nil
+	}
+	return map[string]int{"pending": 3, "approved": 2, "paid": 5, "rejected": 1, "failed": 0, "withdrawn": 0}, nil
+}
+
+func (m *MockStatsRepo) GetFinancialSpending(ctx context.Context, db repository.DBTX, orgID string) (float64, float64, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.FailStats {
+		return 0, 0, errors.New("db error")
+	}
+	return m.TotalSpent[orgID], m.ThisMonthSpent[orgID], nil
+}
+
+func (m *MockStatsRepo) GetRequestsCountThisMonth(ctx context.Context, db repository.DBTX, orgID string) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.FailStats {
+		return 0, errors.New("db error")
+	}
+	return m.RequestsThisMonth[orgID], nil
+}
+
+func (m *MockStatsRepo) GetDashboardSummary(ctx context.Context, db repository.DBTX, orgID string) (*dto.DashboardSummaryResponse, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.FailSummary {
+		return nil, errors.New("db error")
+	}
+	if summary, ok := m.DashboardSummary[orgID]; ok {
+		return summary, nil
+	}
+	return &dto.DashboardSummaryResponse{
+		PendingCount:  4,
+		UrgentCount:   2,
+		CriticalCount: 1,
+		UrgencyBreakdown: dto.UrgencyBreakdown{
+			Routine:  1,
+			Urgent:   2,
+			Critical: 1,
+		},
+		AgingBreakdown: dto.AgingBreakdown{
+			ZeroToThreeDays:  2,
+			ThreeToSevenDays: 1,
+			SevenPlusDays:    1,
+		},
+		EscalatedItems: []dto.EscalatedItem{
+			{
+				ID:            "req-1",
+				RequesterID:   "user-1",
+				RequesterName: "Alice",
+				Amount:        250.0,
+				Urgency:       "critical",
+				DaysPending:   8,
+				CreatedAt:     time.Now().Add(-8 * 24 * time.Hour),
+			},
+		},
+	}, nil
+}
+
 // --- Helper to generate test JWT ---
 
 func generateTestJWT(userID, orgID, role string) string {
@@ -355,16 +522,26 @@ func generateTestJWT(userID, orgID, role string) string {
 // --- Setup Test Engine ---
 
 type testEnvironment struct {
-	router         *gin.Engine
-	orgRepo        *MockOrgRepo
-	memberRepo     *MockMemberRepo
-	invitationRepo *MockInvitationRepo
-	userRepo       *MockUserRepo
-	auditWriter    *MockAuditWriter
-	txRunner       *MockTxRunner
-	orgService     service.OrgService
-	memberService  service.MemberService
-	invService     service.InvitationService
+	router           *gin.Engine
+	orgRepo          *MockOrgRepo
+	memberRepo       *MockMemberRepo
+	invitationRepo   *MockInvitationRepo
+	userRepo         *MockUserRepo
+	auditWriter      *MockAuditWriter
+	statsRepo        *MockStatsRepo
+	txRunner         *MockTxRunner
+	orgService       service.OrgService
+	memberService    service.MemberService
+	invService       service.InvitationService
+	auditService     service.AuditService
+	dashboardService service.DashboardService
+	billingService   service.BillingService
+	orgHandler       *orghandler.OrgHandler
+	memberHandler    *orghandler.MemberHandler
+	invHandler       *orghandler.InvitationHandler
+	auditHandler     *orghandler.AuditHandler
+	dashboardHandler *orghandler.DashboardHandler
+	billingHandler   *orghandler.BillingHandler
 }
 
 func setupTestEnv() *testEnvironment {
@@ -374,32 +551,52 @@ func setupTestEnv() *testEnvironment {
 	invitationRepo := NewMockInvitationRepo()
 	userRepo := NewMockUserRepo()
 	auditWriter := NewMockAuditWriter()
+	statsRepo := NewMockStatsRepo()
 
 	orgService := service.NewOrgServiceWithTx(txRunner, orgRepo, memberRepo, auditWriter)
 	memberService := service.NewMemberService(nil, memberRepo, auditWriter)
 	invService := service.NewInvitationServiceWithTx(txRunner, invitationRepo, memberRepo, userRepo, auditWriter)
+	auditService := service.NewAuditService(nil, auditWriter, memberRepo)
+	dashboardService := service.NewDashboardService(nil, orgRepo, memberRepo, statsRepo)
+	billingService := service.NewBillingService(orgService)
 
 	orgHandler := orghandler.NewOrgHandler(orgService)
 	memberHandler := orghandler.NewMemberHandler(memberService)
 	invHandler := orghandler.NewInvitationHandler(invService)
+	auditHandler := orghandler.NewAuditHandler(auditService)
+	dashboardHandler := orghandler.NewDashboardHandler(dashboardService)
+	billingHandler := orghandler.NewBillingHandler(billingService)
 
 	r := router.SetupRouter(&router.Handlers{
 		Org:        orgHandler,
 		Member:     memberHandler,
 		Invitation: invHandler,
+		Audit:      auditHandler,
+		Dashboard:  dashboardHandler,
+		Billing:    billingHandler,
 	})
 
 	return &testEnvironment{
-		router:         r,
-		orgRepo:        orgRepo,
-		memberRepo:     memberRepo,
-		invitationRepo: invitationRepo,
-		userRepo:       userRepo,
-		auditWriter:    auditWriter,
-		txRunner:       txRunner,
-		orgService:     orgService,
-		memberService:  memberService,
-		invService:     invService,
+		router:           r,
+		orgRepo:          orgRepo,
+		memberRepo:       memberRepo,
+		invitationRepo:   invitationRepo,
+		userRepo:         userRepo,
+		auditWriter:      auditWriter,
+		statsRepo:        statsRepo,
+		txRunner:         txRunner,
+		orgService:       orgService,
+		memberService:    memberService,
+		invService:       invService,
+		auditService:     auditService,
+		dashboardService: dashboardService,
+		billingService:   billingService,
+		orgHandler:       orgHandler,
+		memberHandler:    memberHandler,
+		invHandler:       invHandler,
+		auditHandler:     auditHandler,
+		dashboardHandler: dashboardHandler,
+		billingHandler:   billingHandler,
 	}
 }
 

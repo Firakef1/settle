@@ -12,6 +12,7 @@ type OrgResponse struct {
 	Name      string    `json:"name"`
 	Slug      string    `json:"slug"`
 	Currency  string    `json:"currency"`
+	Plan      string    `json:"plan"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
