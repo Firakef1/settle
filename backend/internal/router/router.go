@@ -1,23 +1,48 @@
-// Package router registers HTTP routes and coordinates domain routers.
 package router
 
 import (
-	orghandler "github.com/Firakef1/settle/backend/internal/organaization/handler"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
+	authHandler "github.com/Firakef1/settle/backend/internal/auth/handler"
+	orghandler "github.com/Firakef1/settle/backend/internal/organaization/handler"
 )
 
-// SetupRouter initializes the Gin engine and registers routes for all domain routers.
-func SetupRouter(
-	orgHandler *orghandler.OrgHandler,
-	memberHandler *orghandler.MemberHandler,
-	invitationHandler *orghandler.InvitationHandler,
-) *gin.Engine {
-	r := gin.Default()
+// Handlers holds all domain handlers to be registered in the router.
+type Handlers struct {
+	Auth       *authHandler.AuthHandler
+	Org        *orghandler.OrgHandler
+	Member     *orghandler.MemberHandler
+	Invitation *orghandler.InvitationHandler
+	// TODO: Add other domain handlers here (Requests, Receipts, Billing, etc.)
+}
 
-	v1 := r.Group("/v1")
+// SetupRouter initializes the Gin router and registers all domain routes.
+func SetupRouter(h *Handlers) *gin.Engine {
+	route := gin.Default()
 
-	// Register organization routes from explicit domain router
-	RegisterOrganizationRoutes(v1, orgHandler, memberHandler, invitationHandler)
+	// Swagger documentation route
+	route.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	return r
+	if h == nil {
+		return route
+	}
+
+	// API v1 group - all domain routes mounted under /api/v1
+	apiV1 := route.Group("/api/v1")
+	{
+		RegisterAuthRoutes(apiV1, h.Auth)
+		RegisterOrganizationRoutes(apiV1, h.Org, h.Member, h.Invitation)
+		// TODO: Register other domain routes here (requests, receipts, etc.)
+	}
+
+	// v1 group - backwards compatibility
+	v1 := route.Group("/v1")
+	{
+		RegisterAuthRoutes(v1, h.Auth)
+		RegisterOrganizationRoutes(v1, h.Org, h.Member, h.Invitation)
+	}
+
+	return route
 }

@@ -383,7 +383,11 @@ func setupTestEnv() *testEnvironment {
 	memberHandler := orghandler.NewMemberHandler(memberService)
 	invHandler := orghandler.NewInvitationHandler(invService)
 
-	r := router.SetupRouter(orgHandler, memberHandler, invHandler)
+	r := router.SetupRouter(&router.Handlers{
+		Org:        orgHandler,
+		Member:     memberHandler,
+		Invitation: invHandler,
+	})
 
 	return &testEnvironment{
 		router:         r,

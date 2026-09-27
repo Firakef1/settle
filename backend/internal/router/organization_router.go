@@ -24,23 +24,35 @@ func RegisterOrganizationRoutes(
 	memberHandler *orghandler.MemberHandler,
 	invitationHandler *orghandler.InvitationHandler,
 ) {
+	if orgHandler == nil && memberHandler == nil && invitationHandler == nil {
+		return
+	}
+
 	// Authenticated routes
 	authenticated := v1.Group("", middleware.AuthRequired())
 	{
 		// Organizations
-		authenticated.POST("/organizations", orgHandler.CreateOrg)
-		authenticated.GET("/organizations/:id", orgHandler.GetOrg)
-		authenticated.PUT("/organizations/:id", middleware.RequireRole("org_admin"), orgHandler.UpdateOrg)
+		if orgHandler != nil {
+			authenticated.POST("/organizations", orgHandler.CreateOrg)
+			authenticated.GET("/organizations/:id", orgHandler.GetOrg)
+			authenticated.PUT("/organizations/:id", middleware.RequireRole("org_admin"), orgHandler.UpdateOrg)
+		}
 
 		// Members
-		authenticated.GET("/organizations/:id/members", middleware.RequireRole("org_admin", "finance"), memberHandler.ListMembers)
-		authenticated.DELETE("/organizations/:id/members/:uid", middleware.RequireRole("org_admin"), memberHandler.RemoveMember)
-		authenticated.PUT("/organizations/:id/members/:uid/role", middleware.RequireRole("org_admin"), memberHandler.UpdateRole)
+		if memberHandler != nil {
+			authenticated.GET("/organizations/:id/members", middleware.RequireRole("org_admin", "finance"), memberHandler.ListMembers)
+			authenticated.DELETE("/organizations/:id/members/:uid", middleware.RequireRole("org_admin"), memberHandler.RemoveMember)
+			authenticated.PUT("/organizations/:id/members/:uid/role", middleware.RequireRole("org_admin"), memberHandler.UpdateRole)
+		}
 
 		// Invitations
-		authenticated.POST("/organizations/:id/invitations", middleware.RequireRole("org_admin"), invitationHandler.CreateInvitation)
+		if invitationHandler != nil {
+			authenticated.POST("/organizations/:id/invitations", middleware.RequireRole("org_admin"), invitationHandler.CreateInvitation)
+		}
 	}
 
 	// Public routes
-	v1.POST("/invitations/:token/accept", invitationHandler.AcceptInvitation)
+	if invitationHandler != nil {
+		v1.POST("/invitations/:token/accept", invitationHandler.AcceptInvitation)
+	}
 }
