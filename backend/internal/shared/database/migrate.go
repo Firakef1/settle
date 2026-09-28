@@ -34,6 +34,21 @@ func RunMigrations() error {
 			log.Println("Database schema is up to date. No new migrations applied.")
 			return nil
 		}
+
+		var dirtyErr migrate.ErrDirty
+		if errors.As(err, &dirtyErr) {
+			log.Printf("Detected dirty database at version %d: attempting recovery...", dirtyErr.Version)
+			if forceErr := m.Force(dirtyErr.Version); forceErr != nil {
+				return fmt.Errorf("failed to force version %d: %w", dirtyErr.Version, forceErr)
+			}
+			log.Printf("Successfully forced version %d to clean. Retrying pending migrations...", dirtyErr.Version)
+			if retryErr := m.Up(); retryErr != nil && !errors.Is(retryErr, migrate.ErrNoChange) {
+				return fmt.Errorf("failed to run migrations after dirty recovery: %w", retryErr)
+			}
+			log.Println("Successfully applied pending database migrations!")
+			return nil
+		}
+
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
 
