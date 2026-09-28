@@ -13,8 +13,22 @@ func RegisterOrgRoutes(
 	orgHandler *orghandler.OrgHandler,
 	memberHandler *orghandler.MemberHandler,
 	invitationHandler *orghandler.InvitationHandler,
+	optionalHandlers ...any,
 ) {
-	RegisterOrganizationRoutes(v1, orgHandler, memberHandler, invitationHandler)
+	RegisterOrganizationRoutes(v1, orgHandler, memberHandler, invitationHandler, optionalHandlers...)
+}
+
+// RegisterAllOrgRoutes explicitly registers all organization domain routes including audit, stats, dashboard, and billing.
+func RegisterAllOrgRoutes(
+	v1 *gin.RouterGroup,
+	orgHandler *orghandler.OrgHandler,
+	memberHandler *orghandler.MemberHandler,
+	invitationHandler *orghandler.InvitationHandler,
+	auditHandler *orghandler.AuditHandler,
+	dashboardHandler *orghandler.DashboardHandler,
+	billingHandler *orghandler.BillingHandler,
+) {
+	RegisterOrganizationRoutes(v1, orgHandler, memberHandler, invitationHandler, auditHandler, dashboardHandler, billingHandler)
 }
 
 // RegisterOrganizationRoutes registers explicit organization domain routes on an existing Gin router group.
@@ -23,8 +37,25 @@ func RegisterOrganizationRoutes(
 	orgHandler *orghandler.OrgHandler,
 	memberHandler *orghandler.MemberHandler,
 	invitationHandler *orghandler.InvitationHandler,
+	optionalHandlers ...any,
 ) {
-	if orgHandler == nil && memberHandler == nil && invitationHandler == nil {
+	var auditHandler *orghandler.AuditHandler
+	var dashboardHandler *orghandler.DashboardHandler
+	var billingHandler *orghandler.BillingHandler
+
+	for _, opt := range optionalHandlers {
+		switch h := opt.(type) {
+		case *orghandler.AuditHandler:
+			auditHandler = h
+		case *orghandler.DashboardHandler:
+			dashboardHandler = h
+		case *orghandler.BillingHandler:
+			billingHandler = h
+		}
+	}
+
+	if orgHandler == nil && memberHandler == nil && invitationHandler == nil &&
+		auditHandler == nil && dashboardHandler == nil && billingHandler == nil {
 		return
 	}
 
@@ -49,10 +80,29 @@ func RegisterOrganizationRoutes(
 		if invitationHandler != nil {
 			authenticated.POST("/organizations/:id/invitations", middleware.RequireRole("org_admin"), invitationHandler.CreateInvitation)
 		}
+
+		// Audit Log
+		if auditHandler != nil {
+			authenticated.GET("/organizations/:id/audit-log", middleware.RequireRole("org_admin", "finance"), auditHandler.GetAuditLogs)
+		}
+
+		// Dashboard & Stats
+		if dashboardHandler != nil {
+			authenticated.GET("/organizations/:id/stats", middleware.RequireRole("org_admin", "finance"), dashboardHandler.GetOrgStats)
+			authenticated.GET("/dashboard/summary", middleware.RequireRole("org_admin", "finance"), dashboardHandler.GetDashboardSummary)
+		}
+
+		// Plan Management (Org scope)
+		if billingHandler != nil {
+			authenticated.PUT("/organizations/:id/plan", middleware.RequireRole("org_admin"), billingHandler.UpdatePlan)
+		}
 	}
 
 	// Public routes
 	if invitationHandler != nil {
 		v1.POST("/invitations/:token/accept", invitationHandler.AcceptInvitation)
+	}
+	if billingHandler != nil {
+		v1.GET("/billing/plans", billingHandler.GetPlans)
 	}
 }

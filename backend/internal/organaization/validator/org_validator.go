@@ -13,12 +13,19 @@ var (
 	ErrInvalidRole      = errors.New("invalid role: must be either staff or finance")
 	ErrInvalidEmail     = errors.New("invalid email address format")
 	ErrPasswordTooShort = errors.New("password must be at least 6 characters")
+	ErrInvalidPlan      = errors.New("invalid plan: must be one of free, starter, pro")
 )
 
 var allowedCurrencies = map[string]bool{
 	"USD": true,
 	"EUR": true,
 	"GBP": true,
+}
+
+var allowedPlans = map[string]bool{
+	"free":    true,
+	"starter": true,
+	"pro":     true,
 }
 
 var allowedInviteRoles = map[string]bool{
@@ -73,6 +80,15 @@ func ValidateEmail(email string) error {
 func ValidatePassword(password string) error {
 	if len(password) < 6 {
 		return ErrPasswordTooShort
+	}
+	return nil
+}
+
+// ValidatePlan checks if the subscription plan is free, starter, or pro.
+func ValidatePlan(plan string) error {
+	lower := strings.ToLower(strings.TrimSpace(plan))
+	if !allowedPlans[lower] {
+		return ErrInvalidPlan
 	}
 	return nil
 }

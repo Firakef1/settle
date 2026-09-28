@@ -15,7 +15,10 @@ type Handlers struct {
 	Org        *orghandler.OrgHandler
 	Member     *orghandler.MemberHandler
 	Invitation *orghandler.InvitationHandler
-	// TODO: Add other domain handlers here (Requests, Receipts, Billing, etc.)
+	Audit      *orghandler.AuditHandler
+	Dashboard  *orghandler.DashboardHandler
+	Billing    *orghandler.BillingHandler
+	// TODO: Add other domain handlers here (Requests, Receipts, etc.)
 }
 
 // SetupRouter initializes the Gin router and registers all domain routes.
@@ -33,7 +36,7 @@ func SetupRouter(h *Handlers) *gin.Engine {
 	apiV1 := route.Group("/api/v1")
 	{
 		RegisterAuthRoutes(apiV1, h.Auth)
-		RegisterOrganizationRoutes(apiV1, h.Org, h.Member, h.Invitation)
+		RegisterOrganizationRoutes(apiV1, h.Org, h.Member, h.Invitation, h.Audit, h.Dashboard, h.Billing)
 		// TODO: Register other domain routes here (requests, receipts, etc.)
 	}
 
@@ -41,7 +44,7 @@ func SetupRouter(h *Handlers) *gin.Engine {
 	v1 := route.Group("/v1")
 	{
 		RegisterAuthRoutes(v1, h.Auth)
-		RegisterOrganizationRoutes(v1, h.Org, h.Member, h.Invitation)
+		RegisterOrganizationRoutes(v1, h.Org, h.Member, h.Invitation, h.Audit, h.Dashboard, h.Billing)
 	}
 
 	return route
