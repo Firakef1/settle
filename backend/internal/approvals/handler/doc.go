@@ -1,2 +1,2 @@
-// Package handler — scaffold only; implement per docs/PRD.md
+// Package handler exposes the finance approval HTTP endpoints.
 package handler

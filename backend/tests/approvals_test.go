@@ -1,3 +1,4 @@
 package tests
 
-// TODO: Dev 2 — approve, reject, mark paid, payment failed
+// State transitions are covered in internal/approvals/service.
+// DB-backed flows belong here once the requests table exists.
