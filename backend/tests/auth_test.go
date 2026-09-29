@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,17 +17,23 @@ import (
 	"github.com/Firakef1/settle/backend/internal/auth/repository"
 	authService "github.com/Firakef1/settle/backend/internal/auth/service"
 	"github.com/Firakef1/settle/backend/internal/router"
+	"github.com/Firakef1/settle/backend/internal/shared/config"
 	sharedService "github.com/Firakef1/settle/backend/internal/shared/service"
 )
 
 func setupTestApp() (*authService.AuthService, *repository.UserRepo, *repository.RefreshTokenRepo, *sharedService.JWTService, http.Handler) {
+	config.AppConfig.Email.LogOnly = true
 	repo := repository.NewUserRepo(nil)
 	refreshTokenRepo := repository.NewRefreshTokenRepo(nil)
+	verCodeRepo := repository.NewVerificationCodeRepo(nil)
 	hashSvc := sharedService.NewHashService()
 	jwtSvc := sharedService.NewJWTServiceWithSecret("test_secret_key_1234567890")
+	emailSvc := sharedService.NewEmailService()
 	svc := authService.NewAuthService(repo, refreshTokenRepo, hashSvc, jwtSvc)
-	handler := authHandler.NewAuthHandler(svc)
-	allHandlers := &router.Handlers{Auth: handler}
+	verSvc := authService.NewVerificationService(verCodeRepo, repo, emailSvc, svc, 15*time.Minute)
+	handler := authHandler.NewAuthHandler(svc, verSvc)
+	verHandler := authHandler.NewVerificationHandler(verSvc, svc)
+	allHandlers := &router.Handlers{Auth: handler, Verification: verHandler}
 	r := router.SetupRouter(allHandlers)
 	return svc, repo, refreshTokenRepo, jwtSvc, r
 }
@@ -52,11 +59,14 @@ func TestIntegration_SignupLoginRefreshLogout(t *testing.T) {
 	var signupResp map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &signupResp)
 	require.NoError(t, err)
-	assert.Equal(t, "user created successfully", signupResp["message"])
+	assert.Equal(t, "verification code sent to your email", signupResp["message"])
 
 	userData := signupResp["user"].(map[string]interface{})
 	userID := userData["id"].(string)
 	assert.NotEmpty(t, userID)
+
+	// Mark email verified for test so login succeeds
+	repo.SetEmailVerifiedForTest("integration@example.com", true)
 
 	// Add mock org membership
 	repo.AddMemoryOrgMembership(model.OrgMembership{
@@ -160,7 +170,7 @@ func TestIntegration_SignupLoginRefreshLogout(t *testing.T) {
 }
 
 func TestIntegration_Signup_DuplicateEmail(t *testing.T) {
-	_, _, _, _, app := setupTestApp()
+	_, repo, _, _, app := setupTestApp()
 
 	payload := dto.SignupRequest{
 		Email:    "duplicate@example.com",
@@ -169,19 +179,29 @@ func TestIntegration_Signup_DuplicateEmail(t *testing.T) {
 	}
 	body, _ := json.Marshal(payload)
 
-	// First request succeeds
+	// First request succeeds (201 Created, unverified)
 	req1, _ := http.NewRequest(http.MethodPost, "/api/v1/auth/signup", bytes.NewBuffer(body))
 	req1.Header.Set("Content-Type", "application/json")
 	w1 := httptest.NewRecorder()
 	app.ServeHTTP(w1, req1)
 	assert.Equal(t, http.StatusCreated, w1.Code)
 
-	// Second request fails with 409 Conflict
-	req2, _ := http.NewRequest(http.MethodPost, "/api/v1/auth/signup", bytes.NewBuffer(body))
-	req2.Header.Set("Content-Type", "application/json")
-	w2 := httptest.NewRecorder()
-	app.ServeHTTP(w2, req2)
-	assert.Equal(t, http.StatusConflict, w2.Code)
+	// Second request when unverified succeeds (201 Created - overwrites unverified credentials)
+	reqUnverified, _ := http.NewRequest(http.MethodPost, "/api/v1/auth/signup", bytes.NewBuffer(body))
+	reqUnverified.Header.Set("Content-Type", "application/json")
+	wUnverified := httptest.NewRecorder()
+	app.ServeHTTP(wUnverified, reqUnverified)
+	assert.Equal(t, http.StatusCreated, wUnverified.Code)
+
+	// Mark email verified
+	repo.SetEmailVerifiedForTest("duplicate@example.com", true)
+
+	// Request when verified fails with 409 Conflict
+	reqVerified, _ := http.NewRequest(http.MethodPost, "/api/v1/auth/signup", bytes.NewBuffer(body))
+	reqVerified.Header.Set("Content-Type", "application/json")
+	wVerified := httptest.NewRecorder()
+	app.ServeHTTP(wVerified, reqVerified)
+	assert.Equal(t, http.StatusConflict, wVerified.Code)
 }
 
 func TestIntegration_Login_InvalidCredentials(t *testing.T) {

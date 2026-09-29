@@ -4,13 +4,14 @@ import "time"
 
 // User represents the user domain model.
 type User struct {
-	ID           string    `json:"id"`
-	Email        string    `json:"email"`
-	Name         string    `json:"name"`
-	PasswordHash string    `json:"-"`
-	Status       string    `json:"status"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID            string    `json:"id"`
+	Email         string    `json:"email"`
+	Name          string    `json:"name"`
+	PasswordHash  string    `json:"-"`
+	Status        string    `json:"status"`
+	EmailVerified bool      `json:"email_verified"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 // OrgMembership represents a user's membership in an organization.

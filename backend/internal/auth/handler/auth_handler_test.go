@@ -2,10 +2,12 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -21,13 +23,20 @@ func init() {
 	gin.SetMode(gin.TestMode)
 }
 
+// noopEmailSender is a stub EmailSender for handler tests that don't test email delivery.
+type noopEmailSender struct{}
+
+func (n *noopEmailSender) Send(_ context.Context, _ sharedService.Email) error { return nil }
+
 func setupHandlerTest() (*AuthHandler, *repository.UserRepo, *repository.RefreshTokenRepo) {
 	userRepo := repository.NewUserRepo(nil)
 	refreshTokenRepo := repository.NewRefreshTokenRepo(nil)
 	hashSvc := sharedService.NewHashService()
 	jwtSvc := sharedService.NewJWTServiceWithSecret("handler_test_secret")
 	svc := service.NewAuthService(userRepo, refreshTokenRepo, hashSvc, jwtSvc)
-	handler := NewAuthHandler(svc)
+	verCodeRepo := repository.NewVerificationCodeRepo(nil)
+	verSvc := service.NewVerificationService(verCodeRepo, userRepo, &noopEmailSender{}, svc, 15*time.Minute)
+	handler := NewAuthHandler(svc, verSvc)
 	return handler, userRepo, refreshTokenRepo
 }
 
@@ -70,7 +79,7 @@ func TestHandler_Signup_Success(t *testing.T) {
 	var res map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &res)
 	require.NoError(t, err)
-	assert.Equal(t, "user created successfully", res["message"])
+	assert.Equal(t, "verification code sent to your email", res["message"])
 
 	userData := res["user"].(map[string]interface{})
 	assert.Equal(t, "test@example.com", userData["email"])
@@ -100,7 +109,7 @@ func TestHandler_Signup_ValidationError(t *testing.T) {
 }
 
 func TestHandler_Signup_DuplicateEmail(t *testing.T) {
-	handler, _, _ := setupHandlerTest()
+	handler, userRepo, _ := setupHandlerTest()
 
 	req := dto.SignupRequest{
 		Email:    "test@example.com",
@@ -108,15 +117,18 @@ func TestHandler_Signup_DuplicateEmail(t *testing.T) {
 		Name:     "Test User",
 	}
 
+	// First signup: success (unverified).
 	performRequest(handler.Signup, "POST", "/signup", req, nil)
+	// Mark user as verified so the second signup hits the conflict path.
+	userRepo.SetEmailVerifiedForTest("test@example.com", true)
 
+	// Second signup with same email (now verified): should 409.
 	w := performRequest(handler.Signup, "POST", "/signup", req, nil)
-
 	assert.Equal(t, http.StatusConflict, w.Code)
 }
 
 func TestHandler_Login_Success(t *testing.T) {
-	handler, _, _ := setupHandlerTest()
+	handler, userRepo, _ := setupHandlerTest()
 
 	signupReq := dto.SignupRequest{
 		Email:    "test@example.com",
@@ -124,6 +136,7 @@ func TestHandler_Login_Success(t *testing.T) {
 		Name:     "Test User",
 	}
 	performRequest(handler.Signup, "POST", "/signup", signupReq, nil)
+	userRepo.SetEmailVerifiedForTest("test@example.com", true)
 
 	loginReq := dto.LoginRequest{
 		Email:    "test@example.com",
@@ -171,7 +184,7 @@ func TestHandler_Login_InvalidCredentials(t *testing.T) {
 }
 
 func TestHandler_Refresh_Success(t *testing.T) {
-	handler, _, _ := setupHandlerTest()
+	handler, userRepo, _ := setupHandlerTest()
 
 	signupReq := dto.SignupRequest{
 		Email:    "test@example.com",
@@ -179,6 +192,7 @@ func TestHandler_Refresh_Success(t *testing.T) {
 		Name:     "Test User",
 	}
 	performRequest(handler.Signup, "POST", "/signup", signupReq, nil)
+	userRepo.SetEmailVerifiedForTest("test@example.com", true)
 
 	loginReq := dto.LoginRequest{
 		Email:    "test@example.com",
@@ -224,7 +238,7 @@ func TestHandler_Refresh_InvalidToken(t *testing.T) {
 }
 
 func TestHandler_Logout_Success(t *testing.T) {
-	handler, _, _ := setupHandlerTest()
+	handler, userRepo, _ := setupHandlerTest()
 
 	signupReq := dto.SignupRequest{
 		Email:    "test@example.com",
@@ -232,6 +246,7 @@ func TestHandler_Logout_Success(t *testing.T) {
 		Name:     "Test User",
 	}
 	performRequest(handler.Signup, "POST", "/signup", signupReq, nil)
+	userRepo.SetEmailVerifiedForTest("test@example.com", true)
 
 	loginReq := dto.LoginRequest{
 		Email:    "test@example.com",
@@ -255,7 +270,7 @@ func TestHandler_Logout_Success(t *testing.T) {
 }
 
 func TestHandler_Logout_NoBody(t *testing.T) {
-	handler, _, _ := setupHandlerTest()
+	handler, userRepo, _ := setupHandlerTest()
 
 	signupReq := dto.SignupRequest{
 		Email:    "test@example.com",
@@ -263,6 +278,7 @@ func TestHandler_Logout_NoBody(t *testing.T) {
 		Name:     "Test User",
 	}
 	performRequest(handler.Signup, "POST", "/signup", signupReq, nil)
+	userRepo.SetEmailVerifiedForTest("test@example.com", true)
 
 	loginReq := dto.LoginRequest{
 		Email:    "test@example.com",

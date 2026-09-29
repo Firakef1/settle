@@ -293,6 +293,13 @@ definitions:
       withdrawn:
         type: integer
     type: object
+  dto.ResendCodeRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
   dto.SignupRequest:
     properties:
       email:
@@ -352,12 +359,40 @@ definitions:
         type: string
       email:
         type: string
+      email_verified:
+        type: boolean
       id:
         type: string
       name:
         type: string
       status:
         type: string
+    type: object
+  dto.VerifyEmailRequest:
+    properties:
+      code:
+        type: string
+      email:
+        type: string
+      verification_code:
+        type: string
+    required:
+    - email
+    type: object
+  dto.VerifyEmailResponse:
+    properties:
+      message:
+        type: string
+      orgs:
+        items:
+          $ref: '#/definitions/dto.OrgMembershipDTO'
+        type: array
+      refresh_token:
+        type: string
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/dto.UserResponseDTO'
     type: object
 info:
   contact: {}
@@ -392,6 +427,12 @@ paths:
             type: object
         "401":
           description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
           schema:
             additionalProperties:
               type: string
@@ -463,6 +504,12 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "500":
           description: Internal Server Error
           schema:
@@ -472,11 +519,49 @@ paths:
       summary: Refresh access token
       tags:
       - auth
+  /auth/resend-verification:
+    post:
+      consumes:
+      - application/json
+      description: Sends a new verification code to the given email. Always returns
+        200 to prevent enumeration.
+      parameters:
+      - description: Email address
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ResendCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Resend verification code
+      tags:
+      - auth
   /auth/signup:
     post:
       consumes:
       - application/json
-      description: Creates a new user account and returns the user object.
+      description: Creates a new user account and sends a verification code to the
+        email.
       parameters:
       - description: Signup details
         in: body
@@ -511,6 +596,41 @@ paths:
               type: string
             type: object
       summary: Register a new user
+      tags:
+      - auth
+  /auth/verify-email:
+    post:
+      consumes:
+      - application/json
+      description: Verifies a user's email with a 6-digit code. On success, returns
+        auth tokens (user is signed in).
+      parameters:
+      - description: Email and code
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.VerifyEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.VerifyEmailResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Verify email address
       tags:
       - auth
   /v1/billing/plans:

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"log"
+	"time"
 
 	authHandler "github.com/Firakef1/settle/backend/internal/auth/handler"
 	authRepo "github.com/Firakef1/settle/backend/internal/auth/repository"
@@ -28,19 +30,30 @@ import (
 // @description     Enter your Bearer token in the format: Bearer {token}
 
 // SetupAuthHandler initializes the auth domain dependencies
-func SetupAuthHandler() *authHandler.AuthHandler {
+func SetupAuthHandler(ctx context.Context) (*authHandler.AuthHandler, *authHandler.VerificationHandler) {
+	cfg := config.AppConfig.Email
+
 	hashSvc := sharedService.NewHashService()
 	jwtSvc := sharedService.NewJWTService()
+	emailSvc := sharedService.NewEmailService()
 
 	// Initialize repositories
 	userRepo := authRepo.NewUserRepo(database.DB)
 	refreshTokenRepo := authRepo.NewRefreshTokenRepo(database.DB)
+	verCodeRepo := authRepo.NewVerificationCodeRepo(database.DB)
 
 	// Initialize services
 	authSvc := authService.NewAuthService(userRepo, refreshTokenRepo, hashSvc, jwtSvc)
+	verSvc := authService.NewVerificationService(verCodeRepo, userRepo, emailSvc, authSvc, cfg.CodeTTL)
+
+	// Cleanup expired verification codes in background
+	go verSvc.RunCleanup(ctx, time.Hour)
 
 	// Initialize handlers
-	return authHandler.NewAuthHandler(authSvc)
+	authH := authHandler.NewAuthHandler(authSvc, verSvc)
+	verH := authHandler.NewVerificationHandler(verSvc, authSvc)
+
+	return authH, verH
 }
 
 // SetupOrgHandlers initializes the organization domain dependencies
@@ -97,21 +110,26 @@ func main() {
 	}
 	defer database.Close()
 
+	// Root context for background goroutines (cleanup, etc.)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	// 4. Initialize Domains
-	authH := SetupAuthHandler()
+	authH, verH := SetupAuthHandler(ctx)
 	orgH, memberH, invitationH, auditH, dashboardH, billingH := SetupOrgHandlers()
 
 	allHandlers := &router.Handlers{
-		Auth:       authH,
-		Org:        orgH,
-		Member:     memberH,
-		Invitation: invitationH,
-		Audit:      auditH,
-		Dashboard:  dashboardH,
-		Billing:    billingH,
+		Auth:         authH,
+		Verification: verH,
+		Org:          orgH,
+		Member:       memberH,
+		Invitation:   invitationH,
+		Audit:        auditH,
+		Dashboard:    dashboardH,
+		Billing:      billingH,
 	}
 
-	// 4. Setup Router
+	// 5. Setup Router
 	engine := router.SetupRouter(allHandlers)
 
 	port := config.AppConfig.HTTPPort
@@ -120,7 +138,7 @@ func main() {
 	}
 	addr := ":" + port
 
-	// 5. Start Server
+	// 6. Start Server
 	log.Printf("Starting Settle API server on port %s...", port)
 	if err := engine.Run(addr); err != nil {
 		log.Fatalf("Failed to start server: %v", err)

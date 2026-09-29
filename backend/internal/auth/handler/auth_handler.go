@@ -2,6 +2,8 @@ package handler
 
 import (
 	"errors"
+	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -15,18 +17,20 @@ import (
 // AuthHandler exposes HTTP handlers for authentication.
 type AuthHandler struct {
 	authService *service.AuthService
+	verService  *service.VerificationService
 }
 
 // NewAuthHandler creates a new AuthHandler instance.
-func NewAuthHandler(authService *service.AuthService) *AuthHandler {
+func NewAuthHandler(authService *service.AuthService, verService *service.VerificationService) *AuthHandler {
 	return &AuthHandler{
 		authService: authService,
+		verService:  verService,
 	}
 }
 
 // Signup godoc
 // @Summary      Register a new user
-// @Description  Creates a new user account and returns the user object.
+// @Description  Creates a new user account and sends a verification code to the email.
 // @Tags         auth
 // @Accept       json
 // @Produce      json
@@ -57,12 +61,20 @@ func (h *AuthHandler) Signup(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create user account"})
+		log.Printf("[ERROR] Signup user creation failed for email %s: %v", req.Email, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to create user account: %v", err)})
+		return
+	}
+
+	// Send verification code.
+	if err := h.verService.SendCode(c.Request.Context(), userDTO.Email); err != nil {
+		log.Printf("[ERROR] Signup SendCode failed for email %s: %v", userDTO.Email, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("could not send verification email: %v", err)})
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "user created successfully",
+		"message": "verification code sent to your email",
 		"user":    userDTO,
 	})
 }
@@ -77,6 +89,7 @@ func (h *AuthHandler) Signup(c *gin.Context) {
 // @Success      200      {object}  dto.LoginResponse
 // @Failure      400      {object}  map[string]string
 // @Failure      401      {object}  map[string]string
+// @Failure      403      {object}  map[string]string
 // @Failure      500      {object}  map[string]string
 // @Router       /auth/login [post]
 // Login handles POST /auth/login
@@ -89,6 +102,13 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	resp, err := h.authService.Login(c.Request.Context(), &req)
 	if err != nil {
+		if errors.Is(err, service.ErrEmailNotVerified) {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error": "email address has not been verified",
+				"code":  "email_not_verified",
+			})
+			return
+		}
 		if errors.Is(err, service.ErrInvalidCredentials) {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			return
@@ -116,6 +136,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 // @Success      200      {object}  dto.LoginResponse
 // @Failure      400      {object}  map[string]string
 // @Failure      401      {object}  map[string]string
+// @Failure      403      {object}  map[string]string
 // @Failure      500      {object}  map[string]string
 // @Router       /auth/refresh [post]
 // Refresh handles POST /auth/refresh
@@ -128,6 +149,13 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 
 	resp, err := h.authService.Refresh(c.Request.Context(), &req)
 	if err != nil {
+		if errors.Is(err, service.ErrEmailNotVerified) {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error": "email address has not been verified",
+				"code":  "email_not_verified",
+			})
+			return
+		}
 		if errors.Is(err, service.ErrRefreshTokenRevoked) {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "refresh token has been revoked"})
 			return

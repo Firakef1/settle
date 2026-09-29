@@ -64,6 +64,15 @@ const docTemplate = `{
                             }
                         }
                     },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -166,6 +175,70 @@ const docTemplate = `{
                             }
                         }
                     },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/resend-verification": {
+            "post": {
+                "description": "Sends a new verification code to the given email. Always returns 200 to prevent enumeration.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Resend verification code",
+                "parameters": [
+                    {
+                        "description": "Email address",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ResendCodeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -180,7 +253,7 @@ const docTemplate = `{
         },
         "/auth/signup": {
             "post": {
-                "description": "Creates a new user account and returns the user object.",
+                "description": "Creates a new user account and sends a verification code to the email.",
                 "consumes": [
                     "application/json"
                 ],
@@ -221,6 +294,58 @@ const docTemplate = `{
                     },
                     "409": {
                         "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/verify-email": {
+            "post": {
+                "description": "Verifies a user's email with a 6-digit code. On success, returns auth tokens (user is signed in).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Verify email address",
+                "parameters": [
+                    {
+                        "description": "Email and code",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.VerifyEmailRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.VerifyEmailResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1733,6 +1858,17 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.ResendCodeRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.SignupRequest": {
             "type": "object",
             "required": [
@@ -1823,6 +1959,9 @@ const docTemplate = `{
                 "email": {
                     "type": "string"
                 },
+                "email_verified": {
+                    "type": "boolean"
+                },
                 "id": {
                     "type": "string"
                 },
@@ -1831,6 +1970,46 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.VerifyEmailRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "verification_code": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.VerifyEmailResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "orgs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.OrgMembershipDTO"
+                    }
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/dto.UserResponseDTO"
                 }
             }
         }
