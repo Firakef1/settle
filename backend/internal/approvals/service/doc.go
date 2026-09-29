@@ -1,2 +1,2 @@
-// Package service — scaffold only; implement per docs/PRD.md
+// Package service applies finance decisions to payout requests.
 package service

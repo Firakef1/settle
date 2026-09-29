@@ -1,2 +1,2 @@
-// Package dto — scaffold only; implement per docs/PRD.md
+// Package dto holds approval HTTP request and response bodies.
 package dto

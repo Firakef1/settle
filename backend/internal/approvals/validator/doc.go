@@ -1,2 +1,2 @@
-// Package validator — scaffold only; implement per docs/PRD.md
+// Package validator checks approval inputs and payment methods.
 package validator

@@ -1,2 +1,2 @@
-// Package model — scaffold only; implement per docs/PRD.md
+// Package model holds approval persistence types.
 package model
