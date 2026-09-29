@@ -38,20 +38,37 @@ func TestSignup_Success(t *testing.T) {
 	assert.NotEmpty(t, userDTO.ID)
 }
 
-func TestSignup_DuplicateEmail(t *testing.T) {
-	svc, _, _, _ := setupTestService()
+// markVerified is a test helper that directly marks a user as email-verified in the memory repo.
+func markVerified(userRepo *repository.UserRepo, email string) {
+	userRepo.SetEmailVerifiedForTest(email, true)
+}
+
+func TestSignup_DuplicateEmail_Unverified_Overwrites(t *testing.T) {
+	svc, userRepo, _, _ := setupTestService()
 	ctx := context.Background()
 
-	req := &dto.SignupRequest{
+	req1 := &dto.SignupRequest{
 		Email:    "duplicate@example.com",
 		Password: "password123",
 		Name:     "User One",
 	}
-
-	_, err := svc.Signup(ctx, req)
+	dto1, err := svc.Signup(ctx, req1)
 	require.NoError(t, err)
 
-	_, err = svc.Signup(ctx, req)
+	// Second signup with same (unverified) email: should succeed (overwrite credentials)
+	req2 := &dto.SignupRequest{
+		Email:    "duplicate@example.com",
+		Password: "newpassword123",
+		Name:     "User Two",
+	}
+	dto2, err := svc.Signup(ctx, req2)
+	require.NoError(t, err)
+	// Same user ID returned (same account).
+	assert.Equal(t, dto1.ID, dto2.ID)
+
+	// Mark user as verified then try signup again -> should get ErrEmailAlreadyRegistered.
+	markVerified(userRepo, "duplicate@example.com")
+	_, err = svc.Signup(ctx, req2)
 	assert.ErrorIs(t, err, ErrEmailAlreadyRegistered)
 }
 
@@ -100,7 +117,7 @@ func TestSignup_ValidationErrors(t *testing.T) {
 }
 
 func TestLogin_Success_ReturnsTokens(t *testing.T) {
-	svc, _, _, jwtSvc := setupTestService()
+	svc, userRepo, _, jwtSvc := setupTestService()
 	ctx := context.Background()
 
 	// Sign up first
@@ -111,6 +128,9 @@ func TestLogin_Success_ReturnsTokens(t *testing.T) {
 	}
 	_, err := svc.Signup(ctx, signupReq)
 	require.NoError(t, err)
+
+	// Simulate email verification so the login gate passes.
+	markVerified(userRepo, "login@example.com")
 
 	// Login
 	loginReq := &dto.LoginRequest{
@@ -161,7 +181,7 @@ func TestLogin_InvalidCredentials(t *testing.T) {
 }
 
 func TestRefresh_RotatesTokens(t *testing.T) {
-	svc, _, _, jwtSvc := setupTestService()
+	svc, userRepo, _, jwtSvc := setupTestService()
 	ctx := context.Background()
 
 	// Sign up and login
@@ -169,6 +189,7 @@ func TestRefresh_RotatesTokens(t *testing.T) {
 		Email: "refresh@example.com", Password: "password123", Name: "Refresh User",
 	})
 	require.NoError(t, err)
+	markVerified(userRepo, "refresh@example.com")
 
 	loginResp, err := svc.Login(ctx, &dto.LoginRequest{
 		Email: "refresh@example.com", Password: "password123",
@@ -197,7 +218,7 @@ func TestRefresh_RotatesTokens(t *testing.T) {
 }
 
 func TestRefresh_OldTokenRevoked(t *testing.T) {
-	svc, _, _, _ := setupTestService()
+	svc, userRepo, _, _ := setupTestService()
 	ctx := context.Background()
 
 	// Sign up and login
@@ -205,6 +226,7 @@ func TestRefresh_OldTokenRevoked(t *testing.T) {
 		Email: "revoke@example.com", Password: "password123", Name: "Revoke User",
 	})
 	require.NoError(t, err)
+	markVerified(userRepo, "revoke@example.com")
 
 	loginResp, err := svc.Login(ctx, &dto.LoginRequest{
 		Email: "revoke@example.com", Password: "password123",
@@ -243,7 +265,7 @@ func TestRefresh_InvalidToken(t *testing.T) {
 }
 
 func TestLogout_RevokesTokens(t *testing.T) {
-	svc, _, _, _ := setupTestService()
+	svc, userRepo, _, _ := setupTestService()
 	ctx := context.Background()
 
 	// Sign up and login
@@ -251,6 +273,7 @@ func TestLogout_RevokesTokens(t *testing.T) {
 		Email: "logout@example.com", Password: "password123", Name: "Logout User",
 	})
 	require.NoError(t, err)
+	markVerified(userRepo, "logout@example.com")
 
 	loginResp, err := svc.Login(ctx, &dto.LoginRequest{
 		Email: "logout@example.com", Password: "password123",

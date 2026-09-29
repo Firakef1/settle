@@ -23,6 +23,7 @@ var (
 	ErrEmailAlreadyRegistered = errors.New("email is already registered")
 	ErrInvalidRefreshToken    = errors.New("invalid or expired refresh token")
 	ErrRefreshTokenRevoked    = errors.New("refresh token has been revoked")
+	ErrEmailNotVerified       = errors.New("email address has not been verified")
 )
 
 // AuthService handles authentication logic.
@@ -69,9 +70,28 @@ func (s *AuthService) Signup(ctx context.Context, req *dto.SignupRequest) (*dto.
 		return nil, err
 	}
 
+	// Normalize email before any lookup or storage.
+	req.Email = normalizeEmail(req.Email)
+
 	existingUser, err := s.userRepo.FindByEmail(ctx, req.Email)
 	if err == nil && existingUser != nil {
-		return nil, ErrEmailAlreadyRegistered
+		if existingUser.EmailVerified {
+			// Verified email: reject as a duplicate.
+			return nil, ErrEmailAlreadyRegistered
+		}
+		// Unverified email: overwrite name and password so the original registrant
+		// cannot keep a squatted account with a known password.
+		hashedPassword, err := s.hashService.Hash(req.Password)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.userRepo.UpdateUnverifiedCredentials(ctx, existingUser.ID, req.Name, hashedPassword); err != nil {
+			return nil, err
+		}
+		existingUser.Name = req.Name
+		existingUser.PasswordHash = hashedPassword
+		userDTO := dto.MapUserToDTO(existingUser)
+		return &userDTO, nil
 	}
 
 	hashedPassword, err := s.hashService.Hash(req.Password)
@@ -81,13 +101,14 @@ func (s *AuthService) Signup(ctx context.Context, req *dto.SignupRequest) (*dto.
 
 	now := time.Now()
 	user := &model.User{
-		ID:           uuid.New().String(),
-		Email:        req.Email,
-		Name:         req.Name,
-		PasswordHash: hashedPassword,
-		Status:       "active",
-		CreatedAt:    now,
-		UpdatedAt:    now,
+		ID:            uuid.New().String(),
+		Email:         req.Email,
+		Name:          req.Name,
+		PasswordHash:  hashedPassword,
+		Status:        "active",
+		EmailVerified: false,
+		CreatedAt:     now,
+		UpdatedAt:     now,
 	}
 
 	if err := s.userRepo.CreateUser(ctx, user); err != nil {
@@ -139,15 +160,29 @@ func (s *AuthService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 		return nil, err
 	}
 
+	req.Email = normalizeEmail(req.Email)
+
 	user, err := s.userRepo.FindByEmail(ctx, req.Email)
 	if err != nil || user == nil {
 		return nil, ErrInvalidCredentials
 	}
 
+	// Check password before revealing verification state.
 	if !s.hashService.Compare(req.Password, user.PasswordHash) {
 		return nil, ErrInvalidCredentials
 	}
 
+	// Gate: reject unverified users after a correct password.
+	if !user.EmailVerified {
+		return nil, ErrEmailNotVerified
+	}
+
+	return s.IssueSession(ctx, user)
+}
+
+// IssueSession creates and returns access + refresh tokens for an already-authenticated user.
+// It is called by Login after credential validation and by VerificationHandler after successful verify.
+func (s *AuthService) IssueSession(ctx context.Context, user *model.User) (*dto.LoginResponse, error) {
 	memberships, err := s.userRepo.GetOrgMemberships(ctx, user.ID)
 	if err != nil {
 		memberships = []model.OrgMembership{}
@@ -214,40 +249,12 @@ func (s *AuthService) Refresh(ctx context.Context, req *dto.RefreshRequest) (*dt
 		return nil, ErrInvalidRefreshToken
 	}
 
-	// Get org memberships
-	memberships, err := s.userRepo.GetOrgMemberships(ctx, user.ID)
-	if err != nil {
-		memberships = []model.OrgMembership{}
+	// Gate: stop pre-existing sessions from bypassing the email-verified requirement.
+	if !user.EmailVerified {
+		return nil, ErrEmailNotVerified
 	}
 
-	primaryOrgID := ""
-	primaryRole := ""
-	if len(memberships) > 0 {
-		primaryOrgID = memberships[0].OrgID
-		primaryRole = memberships[0].Role
-	}
-
-	// Generate new access token
-	accessToken, err := s.jwtService.Generate(user.ID, user.Email, primaryOrgID, primaryRole)
-	if err != nil {
-		return nil, err
-	}
-
-	// Generate new refresh token (rotation)
-	newRefreshTokenStr, err := s.createAndStoreRefreshToken(ctx, user.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	userDTO := dto.MapUserToDTO(user)
-	orgDTOs := dto.MapMembershipsToDTO(memberships)
-
-	return &dto.LoginResponse{
-		Token:        accessToken,
-		RefreshToken: newRefreshTokenStr,
-		User:         userDTO,
-		Orgs:         orgDTOs,
-	}, nil
+	return s.IssueSession(ctx, user)
 }
 
 // Logout revokes the user's refresh tokens.

@@ -4,11 +4,12 @@ import "github.com/Firakef1/settle/backend/internal/auth/model"
 
 // UserResponseDTO represents the user information returned in login/signup response.
 type UserResponseDTO struct {
-	ID        string `json:"id"`
-	Email     string `json:"email"`
-	Name      string `json:"name"`
-	Status    string `json:"status"`
-	CreatedAt string `json:"created_at"`
+	ID            string `json:"id"`
+	Email         string `json:"email"`
+	Name          string `json:"name"`
+	Status        string `json:"status"`
+	EmailVerified bool   `json:"email_verified"`
+	CreatedAt     string `json:"created_at"`
 }
 
 // OrgMembershipDTO represents membership info returned in login response.
@@ -31,11 +32,12 @@ type LoginResponse struct {
 // MapUserToDTO converts user model to response DTO.
 func MapUserToDTO(user *model.User) UserResponseDTO {
 	return UserResponseDTO{
-		ID:        user.ID,
-		Email:     user.Email,
-		Name:      user.Name,
-		Status:    user.Status,
-		CreatedAt: user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		ID:            user.ID,
+		Email:         user.Email,
+		Name:          user.Name,
+		Status:        user.Status,
+		EmailVerified: user.EmailVerified,
+		CreatedAt:     user.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 }
 

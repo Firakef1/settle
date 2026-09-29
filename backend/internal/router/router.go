@@ -11,13 +11,14 @@ import (
 
 // Handlers holds all domain handlers to be registered in the router.
 type Handlers struct {
-	Auth       *authHandler.AuthHandler
-	Org        *orghandler.OrgHandler
-	Member     *orghandler.MemberHandler
-	Invitation *orghandler.InvitationHandler
-	Audit      *orghandler.AuditHandler
-	Dashboard  *orghandler.DashboardHandler
-	Billing    *orghandler.BillingHandler
+	Auth         *authHandler.AuthHandler
+	Verification *authHandler.VerificationHandler
+	Org          *orghandler.OrgHandler
+	Member       *orghandler.MemberHandler
+	Invitation   *orghandler.InvitationHandler
+	Audit        *orghandler.AuditHandler
+	Dashboard    *orghandler.DashboardHandler
+	Billing      *orghandler.BillingHandler
 	// TODO: Add other domain handlers here (Requests, Receipts, etc.)
 }
 
@@ -35,7 +36,7 @@ func SetupRouter(h *Handlers) *gin.Engine {
 	// API v1 group - all domain routes mounted under /api/v1
 	apiV1 := route.Group("/api/v1")
 	{
-		RegisterAuthRoutes(apiV1, h.Auth)
+		RegisterAuthRoutes(apiV1, h.Auth, h.Verification)
 		RegisterOrganizationRoutes(apiV1, h.Org, h.Member, h.Invitation, h.Audit, h.Dashboard, h.Billing)
 		// TODO: Register other domain routes here (requests, receipts, etc.)
 	}
@@ -43,7 +44,7 @@ func SetupRouter(h *Handlers) *gin.Engine {
 	// v1 group - backwards compatibility
 	v1 := route.Group("/v1")
 	{
-		RegisterAuthRoutes(v1, h.Auth)
+		RegisterAuthRoutes(v1, h.Auth, h.Verification)
 		RegisterOrganizationRoutes(v1, h.Org, h.Member, h.Invitation, h.Audit, h.Dashboard, h.Billing)
 	}
 
