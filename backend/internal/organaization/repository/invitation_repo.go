@@ -27,6 +27,9 @@ func NewInvitationRepository() InvitationRepository {
 }
 
 func (r *pgInvitationRepo) Create(ctx context.Context, db DBTX, inv *model.Invitation) error {
+	if db == nil {
+		return errors.New("database connection is nil")
+	}
 	query := `
 		INSERT INTO invitations (id, org_id, email, role, token, expires_at, used_at, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -39,6 +42,9 @@ func (r *pgInvitationRepo) Create(ctx context.Context, db DBTX, inv *model.Invit
 }
 
 func (r *pgInvitationRepo) GetByToken(ctx context.Context, db DBTX, token string) (*model.Invitation, error) {
+	if db == nil {
+		return nil, errors.New("database connection is nil")
+	}
 	query := `
 		SELECT id, org_id, email, role, token, expires_at, used_at, created_at
 		FROM invitations
@@ -65,6 +71,9 @@ func (r *pgInvitationRepo) GetByToken(ctx context.Context, db DBTX, token string
 }
 
 func (r *pgInvitationRepo) MarkUsedTx(ctx context.Context, tx *sql.Tx, token string, usedAt time.Time) error {
+	if tx == nil {
+		return errors.New("database transaction is nil")
+	}
 	query := `
 		UPDATE invitations
 		SET used_at = $1
