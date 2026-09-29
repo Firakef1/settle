@@ -17,9 +17,9 @@ func (r *VerifyEmailRequest) GetCode() string {
 
 // VerifyEmailResponse is the response body returned after verifying email.
 type VerifyEmailResponse struct {
-	Message      string            `json:"message"`
-	Token        string            `json:"token,omitempty"`
-	RefreshToken string            `json:"refresh_token,omitempty"`
-	User         *UserResponseDTO  `json:"user,omitempty"`
+	Message      string             `json:"message"`
+	Token        string             `json:"token,omitempty"`
+	RefreshToken string             `json:"refresh_token,omitempty"`
+	User         *UserResponseDTO   `json:"user,omitempty"`
 	Orgs         []OrgMembershipDTO `json:"orgs,omitempty"`
 }
