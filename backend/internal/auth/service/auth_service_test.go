@@ -3,26 +3,34 @@ package service
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/Firakef1/settle/backend/internal/auth/dto"
 	"github.com/Firakef1/settle/backend/internal/auth/repository"
+	"github.com/Firakef1/settle/backend/internal/shared/config"
 	sharedService "github.com/Firakef1/settle/backend/internal/shared/service"
 )
 
-func setupTestService() (*AuthService, *repository.UserRepo, *repository.RefreshTokenRepo, *sharedService.JWTService) {
+func setupTestService() (*AuthService, *repository.UserRepo, *repository.RefreshTokenRepo, *repository.PasswordResetOTPRepo, *sharedService.JWTService) {
+	config.AppConfig.PasswordResetSecret = "test_secret_key_1234567890"
+	config.AppConfig.PasswordResetOTPTTL = 15 * time.Minute
+	config.AppConfig.PasswordResetMaxAttempts = 5
+
 	userRepo := repository.NewUserRepo(nil)
 	refreshTokenRepo := repository.NewRefreshTokenRepo(nil)
+	pwdResetOTPRepo := repository.NewPasswordResetOTPRepo(nil)
 	hashSvc := sharedService.NewHashService()
 	jwtSvc := sharedService.NewJWTServiceWithSecret("test_secret_key_1234567890")
-	svc := NewAuthService(userRepo, refreshTokenRepo, hashSvc, jwtSvc)
-	return svc, userRepo, refreshTokenRepo, jwtSvc
+	emailSender := sharedService.NewSMTPSender(config.EmailConfig{LogOnly: true})
+	svc := NewAuthService(userRepo, refreshTokenRepo, pwdResetOTPRepo, emailSender, hashSvc, jwtSvc)
+	return svc, userRepo, refreshTokenRepo, pwdResetOTPRepo, jwtSvc
 }
 
 func TestSignup_Success(t *testing.T) {
-	svc, _, _, _ := setupTestService()
+	svc, _, _, _, _ := setupTestService()
 	ctx := context.Background()
 
 	req := &dto.SignupRequest{
@@ -44,7 +52,7 @@ func markVerified(userRepo *repository.UserRepo, email string) {
 }
 
 func TestSignup_DuplicateEmail_Unverified_Overwrites(t *testing.T) {
-	svc, userRepo, _, _ := setupTestService()
+	svc, userRepo, _, _, _ := setupTestService()
 	ctx := context.Background()
 
 	req1 := &dto.SignupRequest{
@@ -73,7 +81,7 @@ func TestSignup_DuplicateEmail_Unverified_Overwrites(t *testing.T) {
 }
 
 func TestSignup_ValidationErrors(t *testing.T) {
-	svc, _, _, _ := setupTestService()
+	svc, _, _, _, _ := setupTestService()
 	ctx := context.Background()
 
 	tests := []struct {
@@ -117,7 +125,7 @@ func TestSignup_ValidationErrors(t *testing.T) {
 }
 
 func TestLogin_Success_ReturnsTokens(t *testing.T) {
-	svc, userRepo, _, jwtSvc := setupTestService()
+	svc, userRepo, _, _, jwtSvc := setupTestService()
 	ctx := context.Background()
 
 	// Sign up first
@@ -152,7 +160,7 @@ func TestLogin_Success_ReturnsTokens(t *testing.T) {
 }
 
 func TestLogin_InvalidCredentials(t *testing.T) {
-	svc, _, _, _ := setupTestService()
+	svc, _, _, _, _ := setupTestService()
 	ctx := context.Background()
 
 	// Non-existent user
@@ -181,7 +189,7 @@ func TestLogin_InvalidCredentials(t *testing.T) {
 }
 
 func TestRefresh_RotatesTokens(t *testing.T) {
-	svc, userRepo, _, jwtSvc := setupTestService()
+	svc, userRepo, _, _, jwtSvc := setupTestService()
 	ctx := context.Background()
 
 	// Sign up and login
@@ -218,7 +226,7 @@ func TestRefresh_RotatesTokens(t *testing.T) {
 }
 
 func TestRefresh_OldTokenRevoked(t *testing.T) {
-	svc, userRepo, _, _ := setupTestService()
+	svc, userRepo, _, _, _ := setupTestService()
 	ctx := context.Background()
 
 	// Sign up and login
@@ -248,7 +256,7 @@ func TestRefresh_OldTokenRevoked(t *testing.T) {
 }
 
 func TestRefresh_InvalidToken(t *testing.T) {
-	svc, _, _, _ := setupTestService()
+	svc, _, _, _, _ := setupTestService()
 	ctx := context.Background()
 
 	// Try with bogus token
@@ -265,7 +273,7 @@ func TestRefresh_InvalidToken(t *testing.T) {
 }
 
 func TestLogout_RevokesTokens(t *testing.T) {
-	svc, userRepo, _, _ := setupTestService()
+	svc, userRepo, _, _, _ := setupTestService()
 	ctx := context.Background()
 
 	// Sign up and login
@@ -294,7 +302,7 @@ func TestLogout_RevokesTokens(t *testing.T) {
 }
 
 func TestLogout_WithoutRefreshToken(t *testing.T) {
-	svc, _, _, _ := setupTestService()
+	svc, _, _, _, _ := setupTestService()
 	ctx := context.Background()
 
 	// Logout with empty should not error
@@ -303,4 +311,99 @@ func TestLogout_WithoutRefreshToken(t *testing.T) {
 
 	err = svc.Logout(ctx, "", &dto.LogoutRequest{})
 	require.NoError(t, err)
+}
+
+func TestForgotPassword_And_ResetPassword_Success(t *testing.T) {
+	svc, userRepo, _, pwdResetOTPRepo, _ := setupTestService()
+	ctx := context.Background()
+
+	// 1. Setup user
+	signupReq := &dto.SignupRequest{
+		Email:    "forgot@example.com",
+		Password: "oldpassword123",
+		Name:     "Forgot User",
+	}
+	userDTO, err := svc.Signup(ctx, signupReq)
+	require.NoError(t, err)
+	markVerified(userRepo, "forgot@example.com")
+
+	// 2. Forgot Password (non-existent email returns nil generic response)
+	err = svc.ForgotPassword(ctx, &dto.ForgotPasswordRequest{Email: "nonexistent@example.com"})
+	require.NoError(t, err)
+
+	// 3. Forgot Password (existing email creates OTP)
+	err = svc.ForgotPassword(ctx, &dto.ForgotPasswordRequest{Email: "forgot@example.com"})
+	require.NoError(t, err)
+
+	// Retrieve stored OTP record from repository
+	otpRecord, err := pwdResetOTPRepo.FindByUserID(ctx, userDTO.ID)
+	require.NoError(t, err)
+	require.NotNil(t, otpRecord)
+
+	// Find the raw OTP by testing numbers or using constant-time compare helper
+	// Since generateCode() creates 6 digits, in test we can mock or compare via OTP reset flow
+	// Let's create an explicit OTP to test ResetPassword logic directly:
+	secret := "test_secret_key_1234567890"
+	testOTP := "654321"
+	hashed := hashOTP(testOTP, secret)
+	otpRecord.OTPHash = hashed
+	err = pwdResetOTPRepo.UpsertOTP(ctx, otpRecord)
+	require.NoError(t, err)
+
+	// 4. Reset Password with invalid OTP
+	err = svc.ResetPassword(ctx, &dto.ResetPasswordRequest{
+		Email:       "forgot@example.com",
+		OTP:         "000000",
+		NewPassword: "newpassword123",
+	})
+	assert.ErrorIs(t, err, ErrInvalidOTP)
+
+	// 5. Reset Password with correct OTP
+	err = svc.ResetPassword(ctx, &dto.ResetPasswordRequest{
+		Email:       "forgot@example.com",
+		OTP:         testOTP,
+		NewPassword: "newpassword123",
+	})
+	require.NoError(t, err)
+
+	// OTP should now be deleted (single use)
+	_, err = pwdResetOTPRepo.FindByUserID(ctx, userDTO.ID)
+	assert.Equal(t, repository.ErrOTPNotFound, err)
+
+	// User should now be able to log in with new password
+	loginResp, err := svc.Login(ctx, &dto.LoginRequest{
+		Email:    "forgot@example.com",
+		Password: "newpassword123",
+	})
+	require.NoError(t, err)
+	assert.NotEmpty(t, loginResp.Token)
+}
+
+func TestDeleteAccount_Success(t *testing.T) {
+	svc, userRepo, _, _, _ := setupTestService()
+	ctx := context.Background()
+
+	signupReq := &dto.SignupRequest{
+		Email:    "delete@example.com",
+		Password: "password123",
+		Name:     "Delete User",
+	}
+	userDTO, err := svc.Signup(ctx, signupReq)
+	require.NoError(t, err)
+	markVerified(userRepo, "delete@example.com")
+
+	// Wrong password returns ErrInvalidCredentials
+	err = svc.DeleteAccount(ctx, userDTO.ID, "wrongpassword")
+	assert.ErrorIs(t, err, ErrInvalidCredentials)
+
+	// Correct password soft deletes user
+	err = svc.DeleteAccount(ctx, userDTO.ID, "password123")
+	require.NoError(t, err)
+
+	// User should not be able to log in anymore
+	_, err = svc.Login(ctx, &dto.LoginRequest{
+		Email:    "delete@example.com",
+		Password: "password123",
+	})
+	assert.ErrorIs(t, err, ErrInvalidCredentials)
 }

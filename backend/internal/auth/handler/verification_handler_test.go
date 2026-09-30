@@ -46,11 +46,12 @@ func (c *capturerEmailSender) extractCode() string {
 func setupVerificationHandlerTest() (*VerificationHandler, *AuthHandler, *capturerEmailSender, *service.VerificationService, *service.AuthService, *repository.UserRepo) {
 	userRepo := repository.NewUserRepo(nil)
 	refreshTokenRepo := repository.NewRefreshTokenRepo(nil)
+	pwdResetRepo := repository.NewPasswordResetOTPRepo(nil)
 	hashSvc := sharedService.NewHashService()
 	jwtSvc := sharedService.NewJWTServiceWithSecret("verification_handler_test_secret")
-	authSvc := service.NewAuthService(userRepo, refreshTokenRepo, hashSvc, jwtSvc)
-
 	sender := &capturerEmailSender{}
+	authSvc := service.NewAuthService(userRepo, refreshTokenRepo, pwdResetRepo, sender, hashSvc, jwtSvc)
+
 	verCodeRepo := repository.NewVerificationCodeRepo(nil)
 	verSvc := service.NewVerificationService(verCodeRepo, userRepo, sender, authSvc, 15*time.Minute)
 

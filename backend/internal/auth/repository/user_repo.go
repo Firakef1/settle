@@ -6,6 +6,7 @@ import (
 	"errors"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/Firakef1/settle/backend/internal/auth/model"
 )
@@ -23,6 +24,8 @@ type UserRepository interface {
 	GetOrgMemberships(ctx context.Context, userID string) ([]model.OrgMembership, error)
 	UpdateUnverifiedCredentials(ctx context.Context, userID, name, passwordHash string) error
 	MarkEmailAsVerified(ctx context.Context, email string) error
+	UpdatePassword(ctx context.Context, userID, newPasswordHash string) error
+	SoftDeleteUser(ctx context.Context, userID string) error
 }
 
 // UserRepo implements UserRepository using database/sql or memory fallback.
@@ -257,4 +260,72 @@ func (r *UserRepo) SetEmailVerifiedForTest(email string, verified bool) {
 	if u, ok := r.memoryUsers[emailLower]; ok {
 		u.EmailVerified = verified
 	}
+}
+
+// UpdatePassword updates a user's password_hash.
+func (r *UserRepo) UpdatePassword(ctx context.Context, userID, newPasswordHash string) error {
+	if r.db != nil {
+		res, err := r.db.ExecContext(ctx,
+			`UPDATE users SET password_hash = $2, updated_at = NOW() WHERE id = $1 AND status = 'active'`,
+			userID, newPasswordHash,
+		)
+		if err != nil {
+			return err
+		}
+		n, err := res.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if n == 0 {
+			return ErrUserNotFound
+		}
+		return nil
+	}
+
+	// Memory fallback
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for _, u := range r.memoryUsers {
+		if u.ID == userID && u.Status == "active" {
+			u.PasswordHash = newPasswordHash
+			u.UpdatedAt = time.Now()
+			return nil
+		}
+	}
+	return ErrUserNotFound
+}
+
+// SoftDeleteUser sets user status = 'deleted' and deleted_at = NOW().
+func (r *UserRepo) SoftDeleteUser(ctx context.Context, userID string) error {
+	if r.db != nil {
+		res, err := r.db.ExecContext(ctx,
+			`UPDATE users SET status = 'deleted', deleted_at = NOW(), updated_at = NOW() WHERE id = $1 AND status = 'active'`,
+			userID,
+		)
+		if err != nil {
+			return err
+		}
+		n, err := res.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if n == 0 {
+			return ErrUserNotFound
+		}
+		return nil
+	}
+
+	// Memory fallback
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for _, u := range r.memoryUsers {
+		if u.ID == userID && u.Status == "active" {
+			u.Status = "deleted"
+			now := time.Now()
+			u.DeletedAt = &now
+			u.UpdatedAt = now
+			return nil
+		}
+	}
+	return ErrUserNotFound
 }

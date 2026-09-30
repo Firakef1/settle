@@ -42,9 +42,10 @@ func SetupAuthHandler(ctx context.Context) (*authHandler.AuthHandler, *authHandl
 	userRepo := authRepo.NewUserRepo(database.DB)
 	refreshTokenRepo := authRepo.NewRefreshTokenRepo(database.DB)
 	verCodeRepo := authRepo.NewVerificationCodeRepo(database.DB)
+	pwdResetOTPRepo := authRepo.NewPasswordResetOTPRepo(database.DB)
 
 	// Initialize services
-	authSvc := authService.NewAuthService(userRepo, refreshTokenRepo, hashSvc, jwtSvc)
+	authSvc := authService.NewAuthService(userRepo, refreshTokenRepo, pwdResetOTPRepo, emailSvc, hashSvc, jwtSvc)
 	verSvc := authService.NewVerificationService(verCodeRepo, userRepo, emailSvc, authSvc, cfg.CodeTTL)
 
 	// Cleanup expired verification codes in background

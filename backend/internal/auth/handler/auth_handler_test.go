@@ -31,11 +31,13 @@ func (n *noopEmailSender) Send(_ context.Context, _ sharedService.Email) error {
 func setupHandlerTest() (*AuthHandler, *repository.UserRepo, *repository.RefreshTokenRepo) {
 	userRepo := repository.NewUserRepo(nil)
 	refreshTokenRepo := repository.NewRefreshTokenRepo(nil)
+	pwdResetRepo := repository.NewPasswordResetOTPRepo(nil)
 	hashSvc := sharedService.NewHashService()
 	jwtSvc := sharedService.NewJWTServiceWithSecret("handler_test_secret")
-	svc := service.NewAuthService(userRepo, refreshTokenRepo, hashSvc, jwtSvc)
+	emailSender := &noopEmailSender{}
+	svc := service.NewAuthService(userRepo, refreshTokenRepo, pwdResetRepo, emailSender, hashSvc, jwtSvc)
 	verCodeRepo := repository.NewVerificationCodeRepo(nil)
-	verSvc := service.NewVerificationService(verCodeRepo, userRepo, &noopEmailSender{}, svc, 15*time.Minute)
+	verSvc := service.NewVerificationService(verCodeRepo, userRepo, emailSender, svc, 15*time.Minute)
 	handler := NewAuthHandler(svc, verSvc)
 	return handler, userRepo, refreshTokenRepo
 }
@@ -295,4 +297,40 @@ func TestHandler_Logout_NoBody(t *testing.T) {
 	w := performRequest(handler.Logout, "POST", "/logout", nil, headers)
 
 	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestHandler_ForgotPassword(t *testing.T) {
+	handler, _, _ := setupHandlerTest()
+
+	// Generic success for any valid email
+	req := dto.ForgotPasswordRequest{Email: "user@example.com"}
+	w := performRequest(handler.ForgotPassword, "POST", "/forgot-password", req, nil)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Invalid email format 400
+	badReq := dto.ForgotPasswordRequest{Email: "invalid-email"}
+	wBad := performRequest(handler.ForgotPassword, "POST", "/forgot-password", badReq, nil)
+	assert.Equal(t, http.StatusBadRequest, wBad.Code)
+}
+
+func TestHandler_ResetPassword_ValidationFailure(t *testing.T) {
+	handler, _, _ := setupHandlerTest()
+
+	// Short password
+	req := dto.ResetPasswordRequest{
+		Email:       "user@example.com",
+		OTP:         "123456",
+		NewPassword: "short",
+	}
+	w := performRequest(handler.ResetPassword, "POST", "/reset-password", req, nil)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	// Invalid OTP format
+	reqOTP := dto.ResetPasswordRequest{
+		Email:       "user@example.com",
+		OTP:         "abc",
+		NewPassword: "newpassword123",
+	}
+	wOTP := performRequest(handler.ResetPassword, "POST", "/reset-password", reqOTP, nil)
+	assert.Equal(t, http.StatusBadRequest, wOTP.Code)
 }

@@ -10,8 +10,10 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/Firakef1/settle/backend/internal/auth/dto"
+	"github.com/Firakef1/settle/backend/internal/auth/repository"
 	"github.com/Firakef1/settle/backend/internal/auth/service"
 	"github.com/Firakef1/settle/backend/internal/auth/validator"
+	"github.com/Firakef1/settle/backend/internal/shared/middleware"
 )
 
 // AuthHandler exposes HTTP handlers for authentication.
@@ -198,5 +200,131 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "logged out successfully",
+	})
+}
+
+// ForgotPassword godoc
+// @Summary      Request password reset
+// @Description  Sends a password reset OTP to the user's email address if registered.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body      dto.ForgotPasswordRequest  true  "Forgot password request"
+// @Success      200      {object}  map[string]string
+// @Failure      400      {object}  map[string]string
+// @Failure      500      {object}  map[string]string
+// @Router       /auth/forgot-password [post]
+// ForgotPassword handles POST /auth/forgot-password
+func (h *AuthHandler) ForgotPassword(c *gin.Context) {
+	var req dto.ForgotPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body format"})
+		return
+	}
+
+	if err := h.authService.ForgotPassword(c.Request.Context(), &req); err != nil {
+		if errors.Is(err, validator.ErrInvalidEmail) || errors.Is(err, validator.ErrEmailRequired) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		log.Printf("[ERROR] ForgotPassword failed for email %s: %v", req.Email, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to process forgot password request"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "If that email is registered, a password reset OTP has been sent.",
+	})
+}
+
+// ResetPassword godoc
+// @Summary      Reset password with OTP
+// @Description  Verifies password reset OTP and sets a new password.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request  body      dto.ResetPasswordRequest  true  "Reset password details"
+// @Success      200      {object}  map[string]string
+// @Failure      400      {object}  map[string]string
+// @Failure      500      {object}  map[string]string
+// @Router       /auth/reset-password [post]
+// ResetPassword handles POST /auth/reset-password
+func (h *AuthHandler) ResetPassword(c *gin.Context) {
+	var req dto.ResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body format"})
+		return
+	}
+
+	if err := h.authService.ResetPassword(c.Request.Context(), &req); err != nil {
+		if errors.Is(err, service.ErrInvalidOTP) ||
+			errors.Is(err, service.ErrMaxAttemptsExceeded) ||
+			errors.Is(err, validator.ErrInvalidEmail) ||
+			errors.Is(err, validator.ErrEmailRequired) ||
+			errors.Is(err, validator.ErrOTPRequired) ||
+			errors.Is(err, validator.ErrInvalidOTP) ||
+			errors.Is(err, validator.ErrPasswordTooShort) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		log.Printf("[ERROR] ResetPassword failed for email %s: %v", req.Email, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "password reset failed"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "password reset successfully",
+	})
+}
+
+// DeleteAccount godoc
+// @Summary      Delete user account
+// @Description  Soft deletes the authenticated user's account and revokes active tokens.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        request  body      dto.DeleteAccountRequest  true  "Current password confirmation"
+// @Success      200      {object}  map[string]string
+// @Failure      400      {object}  map[string]string
+// @Failure      401      {object}  map[string]string
+// @Failure      403      {object}  map[string]string
+// @Failure      404      {object}  map[string]string
+// @Failure      500      {object}  map[string]string
+// @Router       /auth/me [delete]
+// DeleteAccount handles DELETE /auth/me
+func (h *AuthHandler) DeleteAccount(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	var req dto.DeleteAccountRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "current_password is required"})
+		return
+	}
+
+	if err := h.authService.DeleteAccount(c.Request.Context(), userID, req.CurrentPassword); err != nil {
+		if errors.Is(err, service.ErrInvalidCredentials) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "invalid current password"})
+			return
+		}
+		if errors.Is(err, repository.ErrUserNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+			return
+		}
+		if errors.Is(err, validator.ErrCurrentPasswordRequired) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		log.Printf("[ERROR] DeleteAccount failed for userID %s: %v", userID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete account"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "account deleted successfully",
 	})
 }

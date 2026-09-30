@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
+	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -24,12 +26,16 @@ var (
 	ErrInvalidRefreshToken    = errors.New("invalid or expired refresh token")
 	ErrRefreshTokenRevoked    = errors.New("refresh token has been revoked")
 	ErrEmailNotVerified       = errors.New("email address has not been verified")
+	ErrInvalidOTP             = errors.New("invalid or expired verification code")
+	ErrMaxAttemptsExceeded    = errors.New("maximum verification attempts exceeded")
 )
 
 // AuthService handles authentication logic.
 type AuthService struct {
 	userRepo         repository.UserRepository
 	refreshTokenRepo repository.RefreshTokenRepository
+	pwdResetOTPRepo  repository.PasswordResetOTPRepository
+	emailSender      sharedService.EmailSender
 	hashService      *sharedService.HashService
 	jwtService       *sharedService.JWTService
 }
@@ -38,15 +44,30 @@ type AuthService struct {
 func NewAuthService(
 	userRepo repository.UserRepository,
 	refreshTokenRepo repository.RefreshTokenRepository,
+	pwdResetOTPRepo repository.PasswordResetOTPRepository,
+	emailSender sharedService.EmailSender,
 	hashService *sharedService.HashService,
 	jwtService *sharedService.JWTService,
 ) *AuthService {
 	return &AuthService{
 		userRepo:         userRepo,
 		refreshTokenRepo: refreshTokenRepo,
+		pwdResetOTPRepo:  pwdResetOTPRepo,
+		emailSender:      emailSender,
 		hashService:      hashService,
 		jwtService:       jwtService,
 	}
+}
+
+func hashOTP(otp, secret string) string {
+	h := hmac.New(sha256.New, []byte(secret))
+	h.Write([]byte(otp))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+func compareOTPHash(inputOTP, secret, storedHash string) bool {
+	expected := hashOTP(inputOTP, secret)
+	return hmac.Equal([]byte(expected), []byte(storedHash))
 }
 
 // generateRefreshToken creates a cryptographically random refresh token string.
@@ -271,6 +292,156 @@ func (s *AuthService) Logout(ctx context.Context, accessTokenStr string, req *dt
 		if err == nil {
 			_ = s.refreshTokenRepo.RevokeAllForUser(ctx, claims.UserID)
 		}
+	}
+
+	return nil
+}
+
+// ForgotPassword handles initiating password reset request.
+func (s *AuthService) ForgotPassword(ctx context.Context, req *dto.ForgotPasswordRequest) error {
+	if err := validator.ValidateForgotPasswordRequest(req); err != nil {
+		return err
+	}
+
+	email := normalizeEmail(req.Email)
+	user, err := s.userRepo.FindByEmail(ctx, email)
+	if err != nil || user == nil {
+		// Generic response to prevent user enumeration
+		return nil
+	}
+
+	otpStr, err := generateCode()
+	if err != nil {
+		return fmt.Errorf("generate otp: %w", err)
+	}
+
+	secret := config.AppConfig.PasswordResetSecret
+	ttl := config.AppConfig.PasswordResetOTPTTL
+	if ttl <= 0 {
+		ttl = 15 * time.Minute
+	}
+
+	otpHash := hashOTP(otpStr, secret)
+	now := time.Now()
+	otpRecord := &model.PasswordResetOTP{
+		ID:           uuid.New().String(),
+		UserID:       user.ID,
+		OTPHash:      otpHash,
+		ExpiresAt:    now.Add(ttl),
+		AttemptCount: 0,
+		CreatedAt:    now,
+		UpdatedAt:    now,
+	}
+
+	if s.pwdResetOTPRepo != nil {
+		if err := s.pwdResetOTPRepo.UpsertOTP(ctx, otpRecord); err != nil {
+			return fmt.Errorf("save password reset otp: %w", err)
+		}
+	}
+
+	if s.emailSender != nil {
+		body := fmt.Sprintf("Hi %s,\n\nYou requested to reset your password. Use the verification code below to complete your password reset:\n\n%s\n\nIt expires in %d minutes.\nIf you did not request a password reset, please ignore this email.", user.Name, otpStr, int(ttl.Minutes()))
+		_ = s.emailSender.Send(ctx, sharedService.Email{
+			To:      email,
+			Subject: "Reset your password",
+			Body:    body,
+		})
+	}
+
+	return nil
+}
+
+// ResetPassword handles verifying OTP and updating password.
+func (s *AuthService) ResetPassword(ctx context.Context, req *dto.ResetPasswordRequest) error {
+	if err := validator.ValidateResetPasswordRequest(req); err != nil {
+		return err
+	}
+
+	email := normalizeEmail(req.Email)
+	user, err := s.userRepo.FindByEmail(ctx, email)
+	if err != nil || user == nil {
+		return ErrInvalidOTP
+	}
+
+	if s.pwdResetOTPRepo == nil {
+		return ErrInvalidOTP
+	}
+
+	otpRecord, err := s.pwdResetOTPRepo.FindByUserID(ctx, user.ID)
+	if err != nil || otpRecord == nil {
+		return ErrInvalidOTP
+	}
+
+	maxAttempts := config.AppConfig.PasswordResetMaxAttempts
+	if maxAttempts <= 0 {
+		maxAttempts = 5
+	}
+
+	if time.Now().After(otpRecord.ExpiresAt) {
+		_ = s.pwdResetOTPRepo.DeleteByUserID(ctx, user.ID)
+		return ErrInvalidOTP
+	}
+
+	if otpRecord.AttemptCount >= maxAttempts {
+		_ = s.pwdResetOTPRepo.DeleteByUserID(ctx, user.ID)
+		return ErrMaxAttemptsExceeded
+	}
+
+	secret := config.AppConfig.PasswordResetSecret
+	if !compareOTPHash(req.OTP, secret, otpRecord.OTPHash) {
+		newCount, _ := s.pwdResetOTPRepo.IncrementAttemptCount(ctx, user.ID)
+		if newCount >= maxAttempts {
+			_ = s.pwdResetOTPRepo.DeleteByUserID(ctx, user.ID)
+			return ErrMaxAttemptsExceeded
+		}
+		return ErrInvalidOTP
+	}
+
+	// Update password
+	hashedPassword, err := s.hashService.Hash(req.NewPassword)
+	if err != nil {
+		return fmt.Errorf("hash password: %w", err)
+	}
+
+	if err := s.userRepo.UpdatePassword(ctx, user.ID, hashedPassword); err != nil {
+		return err
+	}
+
+	// Single use OTP consume
+	_ = s.pwdResetOTPRepo.DeleteByUserID(ctx, user.ID)
+
+	// Revoke all refresh tokens for this user
+	if s.refreshTokenRepo != nil {
+		_ = s.refreshTokenRepo.RevokeAllForUser(ctx, user.ID)
+	}
+
+	return nil
+}
+
+// DeleteAccount handles authenticated user self-service account deletion.
+func (s *AuthService) DeleteAccount(ctx context.Context, userID, currentPassword string) error {
+	if err := validator.ValidateDeleteAccountRequest(&dto.DeleteAccountRequest{CurrentPassword: currentPassword}); err != nil {
+		return err
+	}
+
+	user, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil || user == nil {
+		return repository.ErrUserNotFound
+	}
+
+	if !s.hashService.Compare(currentPassword, user.PasswordHash) {
+		return ErrInvalidCredentials
+	}
+
+	if err := s.userRepo.SoftDeleteUser(ctx, userID); err != nil {
+		return err
+	}
+
+	if s.refreshTokenRepo != nil {
+		_ = s.refreshTokenRepo.RevokeAllForUser(ctx, userID)
+	}
+	if s.pwdResetOTPRepo != nil {
+		_ = s.pwdResetOTPRepo.DeleteByUserID(ctx, userID)
 	}
 
 	return nil
