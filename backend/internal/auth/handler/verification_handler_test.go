@@ -46,11 +46,12 @@ func (c *capturerEmailSender) extractCode() string {
 func setupVerificationHandlerTest() (*VerificationHandler, *AuthHandler, *capturerEmailSender, *service.VerificationService, *service.AuthService, *repository.UserRepo) {
 	userRepo := repository.NewUserRepo(nil)
 	refreshTokenRepo := repository.NewRefreshTokenRepo(nil)
+	pwdResetRepo := repository.NewPasswordResetOTPRepo(nil)
 	hashSvc := sharedService.NewHashService()
 	jwtSvc := sharedService.NewJWTServiceWithSecret("verification_handler_test_secret")
-	authSvc := service.NewAuthService(userRepo, refreshTokenRepo, hashSvc, jwtSvc)
-
 	sender := &capturerEmailSender{}
+	authSvc := service.NewAuthService(userRepo, refreshTokenRepo, pwdResetRepo, sender, hashSvc, jwtSvc)
+
 	verCodeRepo := repository.NewVerificationCodeRepo(nil)
 	verSvc := service.NewVerificationService(verCodeRepo, userRepo, sender, authSvc, 15*time.Minute)
 
@@ -75,8 +76,8 @@ func TestVerificationHandler_VerifyEmail_Success(t *testing.T) {
 	require.NotEmpty(t, code)
 
 	verifyReq := dto.VerifyEmailRequest{
-		Email: "testverify@example.com",
-		Code:  code,
+		Email:            "testverify@example.com",
+		VerificationCode: code,
 	}
 	wVerify := performRequest(verH.VerifyEmail, "POST", "/verify-email", verifyReq, nil)
 	assert.Equal(t, http.StatusOK, wVerify.Code)
@@ -94,8 +95,8 @@ func TestVerificationHandler_VerifyEmail_InvalidCode(t *testing.T) {
 	require.Equal(t, http.StatusCreated, wSignup.Code)
 
 	verifyReq := dto.VerifyEmailRequest{
-		Email: "wrongcode@example.com",
-		Code:  "999999",
+		Email:            "wrongcode@example.com",
+		VerificationCode: "999999",
 	}
 	wVerify := performRequest(verH.VerifyEmail, "POST", "/verify-email", verifyReq, nil)
 	assert.Equal(t, http.StatusBadRequest, wVerify.Code)

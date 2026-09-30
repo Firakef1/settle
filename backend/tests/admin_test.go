@@ -20,6 +20,7 @@ import (
 	"github.com/Firakef1/settle/backend/internal/organaization/repository"
 	"github.com/Firakef1/settle/backend/internal/organaization/service"
 	"github.com/Firakef1/settle/backend/internal/router"
+	"github.com/Firakef1/settle/backend/internal/shared/config"
 	"github.com/Firakef1/settle/backend/internal/shared/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -29,7 +30,8 @@ import (
 
 func init() {
 	gin.SetMode(gin.TestMode)
-	_ = os.Setenv("JWT_SECRET", "test-secret")
+	_ = os.Setenv("SECRET_KEY", "test-secret")
+	config.Load()
 }
 
 // --- Mocks ---
@@ -515,7 +517,7 @@ func generateTestJWT(userID, orgID, role string) string {
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, _ := token.SignedString([]byte("test-secret"))
+	tokenString, _ := token.SignedString([]byte(config.AppConfig.SecretKey))
 	return tokenString
 }
 

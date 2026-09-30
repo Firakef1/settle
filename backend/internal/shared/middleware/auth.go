@@ -2,11 +2,12 @@ package middleware
 
 import (
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+
+	"github.com/Firakef1/settle/backend/internal/shared/config"
 )
 
 const (
@@ -23,9 +24,9 @@ type CustomClaims struct {
 }
 
 func getJWTSecret() []byte {
-	secret := os.Getenv("JWT_SECRET")
+	secret := config.AppConfig.SecretKey
 	if secret == "" {
-		secret = "dev-secret"
+		secret = "settle_default_development_secret_key_change_in_prod"
 	}
 	return []byte(secret)
 }

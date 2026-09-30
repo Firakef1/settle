@@ -32,10 +32,11 @@ func (m *mockEmailSender) Send(_ context.Context, email sharedService.Email) err
 func setupVerificationService(sender *mockEmailSender) (*VerificationService, *repository.UserRepo, *repository.VerificationCodeRepo) {
 	userRepo := repository.NewUserRepo(nil)
 	verCodeRepo := repository.NewVerificationCodeRepo(nil)
+	pwdResetRepo := repository.NewPasswordResetOTPRepo(nil)
 	hashSvc := sharedService.NewHashService()
 	jwtSvc := sharedService.NewJWTServiceWithSecret("test_jwt_secret_1234567890")
 	refreshTokenRepo := repository.NewRefreshTokenRepo(nil)
-	authSvc := NewAuthService(userRepo, refreshTokenRepo, hashSvc, jwtSvc)
+	authSvc := NewAuthService(userRepo, refreshTokenRepo, pwdResetRepo, sender, hashSvc, jwtSvc)
 
 	verSvc := NewVerificationService(verCodeRepo, userRepo, sender, authSvc, 15*time.Minute)
 	return verSvc, userRepo, verCodeRepo
@@ -76,8 +77,8 @@ func TestVerificationService_SendAndVerify(t *testing.T) {
 
 	// VerifyEmail with wrong code -> ErrInvalidOrExpiredCode
 	_, err = verSvc.VerifyEmail(ctx, dto.VerifyEmailRequest{
-		Email: "testver@example.com",
-		Code:  "999999",
+		Email:            "testver@example.com",
+		VerificationCode: "999999",
 	})
 	assert.ErrorIs(t, err, ErrInvalidOrExpiredCode)
 }

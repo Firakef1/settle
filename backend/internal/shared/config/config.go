@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -57,6 +58,12 @@ type Config struct {
 	HTTPPort string
 	// Email holds email delivery and code configuration.
 	Email EmailConfig
+	// PasswordResetSecret key used for HMAC SHA256 hashing of OTPs.
+	PasswordResetSecret string
+	// PasswordResetOTPTTL lifetime of password reset OTP.
+	PasswordResetOTPTTL time.Duration
+	// PasswordResetMaxAttempts max failed attempts per OTP.
+	PasswordResetMaxAttempts int
 }
 
 // AppConfig is the global application configuration.
@@ -64,13 +71,26 @@ var AppConfig Config
 
 // Load reads environment variables and populates AppConfig.
 func Load() {
+	secretKey := getEnvOrDefault("SECRET_KEY", "settle_default_development_secret_key_change_in_prod")
+	codeSecret := getEnvOrDefault("EMAIL_CODE_SECRET", "settle_default_email_code_secret_at_least_32_chars")
+	pwdResetSecret := os.Getenv("PASSWORD_RESET_SECRET")
+	if pwdResetSecret == "" {
+		pwdResetSecret = codeSecret
+	}
+	if pwdResetSecret == "" {
+		pwdResetSecret = secretKey
+	}
+
 	AppConfig = Config{
-		SecretKey:       getEnvOrDefault("SECRET_KEY", "settle_default_development_secret_key_change_in_prod"),
-		RefreshTokenTTL: parseDurationOrDefault(os.Getenv("REFRESH_TOKEN_TTL"), 30*24*time.Hour), // default 30 days
-		AccessTokenTTL:  parseDurationOrDefault(os.Getenv("ACCESS_TOKEN_TTL"), 24*time.Hour),     // default 24 hours
-		DatabaseURL:     getEnvOrDefault("DATABASE_URL", ""),
-		AppEnv:          getEnvOrDefault("APP_ENV", "development"),
-		HTTPPort:        getEnvOrDefault("HTTP_PORT", "8080"),
+		SecretKey:                secretKey,
+		RefreshTokenTTL:          parseDurationOrDefault(os.Getenv("REFRESH_TOKEN_TTL"), 30*24*time.Hour), // default 30 days
+		AccessTokenTTL:           parseDurationOrDefault(os.Getenv("ACCESS_TOKEN_TTL"), 24*time.Hour),     // default 24 hours
+		DatabaseURL:              getEnvOrDefault("DATABASE_URL", ""),
+		AppEnv:                   getEnvOrDefault("APP_ENV", "development"),
+		HTTPPort:                 getEnvOrDefault("HTTP_PORT", "8080"),
+		PasswordResetSecret:      pwdResetSecret,
+		PasswordResetOTPTTL:      parseDurationOrDefault(os.Getenv("PASSWORD_RESET_OTP_TTL"), 15*time.Minute),
+		PasswordResetMaxAttempts: parseIntOrDefault(os.Getenv("PASSWORD_RESET_MAX_ATTEMPTS"), 5),
 		Email: EmailConfig{
 			SMTPHost:     getEnvOrDefault("SMTP_HOST", ""),
 			SMTPPort:     getEnvOrDefault("SMTP_PORT", "587"),
@@ -79,9 +99,9 @@ func Load() {
 			FromAddress:  getEnvOrDefault("EMAIL_FROM_ADDRESS", getEnvOrDefault("SMTP_FROM", os.Getenv("SMTP_USERNAME"))),
 			FromName:     getEnvOrDefault("EMAIL_FROM_NAME", "Settle"),
 			SendTimeout:  parseDurationOrDefault(os.Getenv("EMAIL_SEND_TIMEOUT"), 10*time.Second),
-			LogOnly:      os.Getenv("EMAIL_LOG_ONLY") == "true",
+			LogOnly:      getEnvOrDefault("EMAIL_LOG_ONLY", "true") == "true",
 			CodeTTL:      parseDurationOrDefault(os.Getenv("EMAIL_CODE_TTL"), 15*time.Minute),
-			CodeSecret:   os.Getenv("EMAIL_CODE_SECRET"),
+			CodeSecret:   codeSecret,
 		},
 	}
 	if err := AppConfig.Email.Validate(); err != nil {
@@ -106,4 +126,15 @@ func parseDurationOrDefault(val string, defaultDur time.Duration) time.Duration 
 		return defaultDur
 	}
 	return d
+}
+
+func parseIntOrDefault(val string, defaultVal int) int {
+	if val == "" {
+		return defaultVal
+	}
+	n, err := strconv.Atoi(val)
+	if err != nil {
+		return defaultVal
+	}
+	return n
 }

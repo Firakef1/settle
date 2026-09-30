@@ -121,6 +121,13 @@ definitions:
       urgent_count:
         type: integer
     type: object
+  dto.DeleteAccountRequest:
+    properties:
+      current_password:
+        type: string
+    required:
+    - current_password
+    type: object
   dto.EscalatedItem:
     properties:
       amount:
@@ -146,6 +153,13 @@ definitions:
         type: number
       total_spent:
         type: number
+    type: object
+  dto.ForgotPasswordRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
     type: object
   dto.InviteRequest:
     properties:
@@ -351,6 +365,20 @@ definitions:
     required:
     - email
     type: object
+  dto.ResetPasswordRequest:
+    properties:
+      email:
+        type: string
+      new_password:
+        minLength: 8
+        type: string
+      otp:
+        type: string
+    required:
+    - email
+    - new_password
+    - otp
+    type: object
   dto.SignupRequest:
     properties:
       email:
@@ -421,14 +449,13 @@ definitions:
     type: object
   dto.VerifyEmailRequest:
     properties:
-      code:
-        type: string
       email:
         type: string
       verification_code:
         type: string
     required:
     - email
+    - verification_code
     type: object
   dto.VerifyEmailResponse:
     properties:
@@ -451,6 +478,42 @@ info:
   title: Settle API
   version: "1.0"
 paths:
+  /auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Sends a password reset OTP to the user's email address if registered.
+      parameters:
+      - description: Forgot password request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Request password reset
+      tags:
+      - auth
   /auth/login:
     post:
       consumes:
@@ -521,6 +584,63 @@ paths:
       security:
       - BearerAuth: []
       summary: User logout
+      tags:
+      - auth
+  /auth/me:
+    delete:
+      consumes:
+      - application/json
+      description: Soft deletes the authenticated user's account and revokes active
+        tokens.
+      parameters:
+      - description: Current password confirmation
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.DeleteAccountRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete user account
       tags:
       - auth
   /auth/refresh:
@@ -605,6 +725,42 @@ paths:
               type: string
             type: object
       summary: Resend verification code
+      tags:
+      - auth
+  /auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Verifies password reset OTP and sets a new password.
+      parameters:
+      - description: Reset password details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Reset password with OTP
       tags:
       - auth
   /auth/signup:

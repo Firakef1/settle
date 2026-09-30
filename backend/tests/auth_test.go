@@ -25,11 +25,12 @@ func setupTestApp() (*authService.AuthService, *repository.UserRepo, *repository
 	config.AppConfig.Email.LogOnly = true
 	repo := repository.NewUserRepo(nil)
 	refreshTokenRepo := repository.NewRefreshTokenRepo(nil)
+	pwdResetRepo := repository.NewPasswordResetOTPRepo(nil)
 	verCodeRepo := repository.NewVerificationCodeRepo(nil)
 	hashSvc := sharedService.NewHashService()
 	jwtSvc := sharedService.NewJWTServiceWithSecret("test_secret_key_1234567890")
 	emailSvc := sharedService.NewEmailService()
-	svc := authService.NewAuthService(repo, refreshTokenRepo, hashSvc, jwtSvc)
+	svc := authService.NewAuthService(repo, refreshTokenRepo, pwdResetRepo, emailSvc, hashSvc, jwtSvc)
 	verSvc := authService.NewVerificationService(verCodeRepo, repo, emailSvc, svc, 15*time.Minute)
 	handler := authHandler.NewAuthHandler(svc, verSvc)
 	verHandler := authHandler.NewVerificationHandler(verSvc, svc)

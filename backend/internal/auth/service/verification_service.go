@@ -151,7 +151,7 @@ func (s *VerificationService) VerifyEmail(ctx context.Context, req dto.VerifyEma
 }
 
 func (s *VerificationService) VerifyCode(ctx context.Context, email, code string) (*model.User, error) {
-	resp, err := s.VerifyEmail(ctx, dto.VerifyEmailRequest{Email: email, Code: code})
+	resp, err := s.VerifyEmail(ctx, dto.VerifyEmailRequest{Email: email, VerificationCode: code})
 	if err != nil {
 		return nil, err
 	}

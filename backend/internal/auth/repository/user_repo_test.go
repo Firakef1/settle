@@ -136,3 +136,39 @@ func TestUserRepo_GetOrgMemberships_WithData(t *testing.T) {
 	require.Len(t, memberships, 1)
 	assert.Equal(t, "org1", memberships[0].OrgID)
 }
+
+func TestUserRepo_UpdatePassword(t *testing.T) {
+	repo := NewUserRepo(nil)
+	ctx := context.Background()
+	user := &model.User{
+		ID:           "user1",
+		Email:        "test@example.com",
+		PasswordHash: "oldhash",
+		Status:       "active",
+	}
+	_ = repo.CreateUser(ctx, user)
+
+	err := repo.UpdatePassword(ctx, "user1", "newhash")
+	require.NoError(t, err)
+
+	found, err := repo.FindByID(ctx, "user1")
+	require.NoError(t, err)
+	assert.Equal(t, "newhash", found.PasswordHash)
+}
+
+func TestUserRepo_SoftDeleteUser(t *testing.T) {
+	repo := NewUserRepo(nil)
+	ctx := context.Background()
+	user := &model.User{
+		ID:     "user1",
+		Email:  "test@example.com",
+		Status: "active",
+	}
+	_ = repo.CreateUser(ctx, user)
+
+	err := repo.SoftDeleteUser(ctx, "user1")
+	require.NoError(t, err)
+
+	_, err = repo.FindByID(ctx, "user1")
+	assert.ErrorIs(t, err, ErrUserNotFound)
+}
