@@ -72,7 +72,7 @@ var AppConfig Config
 // Load reads environment variables and populates AppConfig.
 func Load() {
 	secretKey := getEnvOrDefault("SECRET_KEY", "settle_default_development_secret_key_change_in_prod")
-	codeSecret := os.Getenv("EMAIL_CODE_SECRET")
+	codeSecret := getEnvOrDefault("EMAIL_CODE_SECRET", "settle_default_email_code_secret_at_least_32_chars")
 	pwdResetSecret := os.Getenv("PASSWORD_RESET_SECRET")
 	if pwdResetSecret == "" {
 		pwdResetSecret = codeSecret
@@ -99,7 +99,7 @@ func Load() {
 			FromAddress:  getEnvOrDefault("EMAIL_FROM_ADDRESS", getEnvOrDefault("SMTP_FROM", os.Getenv("SMTP_USERNAME"))),
 			FromName:     getEnvOrDefault("EMAIL_FROM_NAME", "Settle"),
 			SendTimeout:  parseDurationOrDefault(os.Getenv("EMAIL_SEND_TIMEOUT"), 10*time.Second),
-			LogOnly:      os.Getenv("EMAIL_LOG_ONLY") == "true",
+			LogOnly:      getEnvOrDefault("EMAIL_LOG_ONLY", "true") == "true",
 			CodeTTL:      parseDurationOrDefault(os.Getenv("EMAIL_CODE_TTL"), 15*time.Minute),
 			CodeSecret:   codeSecret,
 		},

@@ -77,8 +77,8 @@ func TestVerificationService_SendAndVerify(t *testing.T) {
 
 	// VerifyEmail with wrong code -> ErrInvalidOrExpiredCode
 	_, err = verSvc.VerifyEmail(ctx, dto.VerifyEmailRequest{
-		Email: "testver@example.com",
-		Code:  "999999",
+		Email:            "testver@example.com",
+		VerificationCode: "999999",
 	})
 	assert.ErrorIs(t, err, ErrInvalidOrExpiredCode)
 }

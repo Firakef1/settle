@@ -3,15 +3,11 @@ package dto
 // VerifyEmailRequest is the request body for verifying an email address.
 type VerifyEmailRequest struct {
 	Email            string `json:"email" binding:"required,email"`
-	Code             string `json:"code"`
-	VerificationCode string `json:"verification_code"`
+	VerificationCode string `json:"verification_code" binding:"required"`
 }
 
-// GetCode returns whichever code field was provided in JSON.
+// GetCode returns the verification code.
 func (r *VerifyEmailRequest) GetCode() string {
-	if r.Code != "" {
-		return r.Code
-	}
 	return r.VerificationCode
 }
 

@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"net/http"
-	// "os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -25,18 +24,11 @@ type CustomClaims struct {
 }
 
 func getJWTSecret() []byte {
-	return []byte(config.AppConfig.SecretKey)
-	// if config.AppConfig.SecretKey != "" {
-	// 	return []byte(config.AppConfig.SecretKey)
-	// }
-	// secret := os.Getenv("SECRET_KEY")
-	// if secret == "" {
-	// 	secret = os.Getenv("JWT_SECRET")
-	// }
-	// if secret == "" {
-	// 	secret = "settle_default_development_secret_key_change_in_prod"
-	// }
-	// return []byte(secret)
+	secret := config.AppConfig.SecretKey
+	if secret == "" {
+		secret = "settle_default_development_secret_key_change_in_prod"
+	}
+	return []byte(secret)
 }
 
 // AuthRequired validates the JWT Bearer token from the Authorization header.

@@ -76,8 +76,8 @@ func TestVerificationHandler_VerifyEmail_Success(t *testing.T) {
 	require.NotEmpty(t, code)
 
 	verifyReq := dto.VerifyEmailRequest{
-		Email: "testverify@example.com",
-		Code:  code,
+		Email:            "testverify@example.com",
+		VerificationCode: code,
 	}
 	wVerify := performRequest(verH.VerifyEmail, "POST", "/verify-email", verifyReq, nil)
 	assert.Equal(t, http.StatusOK, wVerify.Code)
@@ -95,8 +95,8 @@ func TestVerificationHandler_VerifyEmail_InvalidCode(t *testing.T) {
 	require.Equal(t, http.StatusCreated, wSignup.Code)
 
 	verifyReq := dto.VerifyEmailRequest{
-		Email: "wrongcode@example.com",
-		Code:  "999999",
+		Email:            "wrongcode@example.com",
+		VerificationCode: "999999",
 	}
 	wVerify := performRequest(verH.VerifyEmail, "POST", "/verify-email", verifyReq, nil)
 	assert.Equal(t, http.StatusBadRequest, wVerify.Code)

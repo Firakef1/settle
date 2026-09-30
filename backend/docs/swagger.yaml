@@ -449,14 +449,13 @@ definitions:
     type: object
   dto.VerifyEmailRequest:
     properties:
-      code:
-        type: string
       email:
         type: string
       verification_code:
         type: string
     required:
     - email
+    - verification_code
     type: object
   dto.VerifyEmailResponse:
     properties:

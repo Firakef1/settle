@@ -2729,12 +2729,10 @@ const docTemplate = `{
         "dto.VerifyEmailRequest": {
             "type": "object",
             "required": [
-                "email"
+                "email",
+                "verification_code"
             ],
             "properties": {
-                "code": {
-                    "type": "string"
-                },
                 "email": {
                     "type": "string"
                 },
