@@ -7,7 +7,6 @@ import (
 )
 
 // RegisterApprovalRoutes mounts finance decision routes on an existing router group.
-// SetupRouter does not call this yet, so the shared router file stays free of this change.
 func RegisterApprovalRoutes(v1 *gin.RouterGroup, approvalHandler *approvalhandler.ApprovalHandler) {
 	if v1 == nil || approvalHandler == nil {
 		return

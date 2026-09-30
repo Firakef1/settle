@@ -5,6 +5,7 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
+	approvalhandler "github.com/Firakef1/settle/backend/internal/approvals/handler"
 	authHandler "github.com/Firakef1/settle/backend/internal/auth/handler"
 	orghandler "github.com/Firakef1/settle/backend/internal/organaization/handler"
 )
@@ -19,6 +20,7 @@ type Handlers struct {
 	Audit        *orghandler.AuditHandler
 	Dashboard    *orghandler.DashboardHandler
 	Billing      *orghandler.BillingHandler
+	Approval     *approvalhandler.ApprovalHandler
 	// TODO: Add other domain handlers here (Requests, Receipts, etc.)
 }
 
@@ -38,6 +40,7 @@ func SetupRouter(h *Handlers) *gin.Engine {
 	{
 		RegisterAuthRoutes(apiV1, h.Auth, h.Verification)
 		RegisterOrganizationRoutes(apiV1, h.Org, h.Member, h.Invitation, h.Audit, h.Dashboard, h.Billing)
+		RegisterApprovalRoutes(apiV1, h.Approval)
 		// TODO: Register other domain routes here (requests, receipts, etc.)
 	}
 
@@ -46,6 +49,7 @@ func SetupRouter(h *Handlers) *gin.Engine {
 	{
 		RegisterAuthRoutes(v1, h.Auth, h.Verification)
 		RegisterOrganizationRoutes(v1, h.Org, h.Member, h.Invitation, h.Audit, h.Dashboard, h.Billing)
+		RegisterApprovalRoutes(v1, h.Approval)
 	}
 
 	return route

@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/Firakef1/settle/backend/internal/approvals"
 	authHandler "github.com/Firakef1/settle/backend/internal/auth/handler"
 	authRepo "github.com/Firakef1/settle/backend/internal/auth/repository"
 	authService "github.com/Firakef1/settle/backend/internal/auth/service"
@@ -117,6 +118,7 @@ func main() {
 	// 4. Initialize Domains
 	authH, verH := SetupAuthHandler(ctx)
 	orgH, memberH, invitationH, auditH, dashboardH, billingH := SetupOrgHandlers()
+	approvalH := approvals.SetupHandler(database.DB)
 
 	allHandlers := &router.Handlers{
 		Auth:         authH,
@@ -127,6 +129,7 @@ func main() {
 		Audit:        auditH,
 		Dashboard:    dashboardH,
 		Billing:      billingH,
+		Approval:     approvalH,
 	}
 
 	// 5. Setup Router
