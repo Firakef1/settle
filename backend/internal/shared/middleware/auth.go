@@ -2,11 +2,13 @@ package middleware
 
 import (
 	"net/http"
-	"os"
+	// "os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+
+	"github.com/Firakef1/settle/backend/internal/shared/config"
 )
 
 const (
@@ -23,11 +25,18 @@ type CustomClaims struct {
 }
 
 func getJWTSecret() []byte {
-	secret := os.Getenv("JWT_SECRET")
-	if secret == "" {
-		secret = "dev-secret"
-	}
-	return []byte(secret)
+	return []byte(config.AppConfig.SecretKey)
+	// if config.AppConfig.SecretKey != "" {
+	// 	return []byte(config.AppConfig.SecretKey)
+	// }
+	// secret := os.Getenv("SECRET_KEY")
+	// if secret == "" {
+	// 	secret = os.Getenv("JWT_SECRET")
+	// }
+	// if secret == "" {
+	// 	secret = "settle_default_development_secret_key_change_in_prod"
+	// }
+	// return []byte(secret)
 }
 
 // AuthRequired validates the JWT Bearer token from the Authorization header.

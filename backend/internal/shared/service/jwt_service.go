@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	// "os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -32,9 +33,15 @@ type JWTService struct {
 // NewJWTService initializes JWTService with secret key from shared config.
 func NewJWTService() *JWTService {
 	secret := config.AppConfig.SecretKey
-	if secret == "" {
-		secret = "settle_default_development_secret_key_change_in_prod"
-	}
+	// if secret == "" {
+	// 	secret = os.Getenv("SECRET_KEY")
+	// }
+	// if secret == "" {
+	// 	secret = os.Getenv("JWT_SECRET")
+	// }
+	// if secret == "" {
+	// 	secret = "settle_default_development_secret_key_change_in_prod"
+	// }
 	ttl := config.AppConfig.AccessTokenTTL
 	if ttl == 0 {
 		ttl = 24 * time.Hour
