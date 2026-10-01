@@ -28,7 +28,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.ForgotPasswordRequest"
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.ForgotPasswordRequest"
                         }
                     }
                 ],
@@ -83,7 +83,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.LoginRequest"
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.LoginRequest"
                         }
                     }
                 ],
@@ -91,7 +91,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.LoginResponse"
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.LoginResponse"
                         }
                     },
                     "400": {
@@ -157,7 +157,7 @@
                         "name": "request",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/dto.LogoutRequest"
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.LogoutRequest"
                         }
                     }
                 ],
@@ -199,7 +199,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.DeleteAccountRequest"
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.DeleteAccountRequest"
                         }
                     }
                 ],
@@ -281,7 +281,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.RefreshRequest"
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.RefreshRequest"
                         }
                     }
                 ],
@@ -289,7 +289,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.LoginResponse"
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.LoginResponse"
                         }
                     },
                     "400": {
@@ -351,7 +351,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.ResendCodeRequest"
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.ResendCodeRequest"
                         }
                     }
                 ],
@@ -406,7 +406,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.ResetPasswordRequest"
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.ResetPasswordRequest"
                         }
                     }
                 ],
@@ -461,7 +461,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.SignupRequest"
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.SignupRequest"
                         }
                     }
                 ],
@@ -523,7 +523,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.VerifyEmailRequest"
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.VerifyEmailRequest"
                         }
                     }
                 ],
@@ -531,11 +531,664 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.VerifyEmailResponse"
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.VerifyEmailResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/requests": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List requests with filtering and pagination",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "requests"
+                ],
+                "summary": "List requests",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by urgency",
+                        "name": "urgency",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by requester",
+                        "name": "requester_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort by field (e.g., created_at)",
+                        "name": "sort_by",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort order (asc, desc)",
+                        "name": "sort_order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.RequestListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new payout request",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "requests"
+                ],
+                "summary": "Create request",
+                "parameters": [
+                    {
+                        "description": "Create Request DTO",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.CreateRequestDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.RequestResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/requests/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get full request details including receipts and comments",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "requests"
+                ],
+                "summary": "Get request details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.RequestResponse"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/requests/{id}/comments": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Add a comment to a request",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "requests"
+                ],
+                "summary": "Add comment",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Add Comment DTO",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.AddCommentDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.CommentResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/requests/{id}/receipts": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Upload a receipt to a draft request",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "requests"
+                ],
+                "summary": "Upload receipt",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Receipt file",
+                        "name": "receipt",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.ReceiptResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/requests/{id}/resubmit": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Resubmit a rejected or failed payout request",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "requests"
+                ],
+                "summary": "Resubmit request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Resubmit Request DTO",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.ResubmitRequestDTO"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.RequestResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/requests/{id}/submit": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Submit a draft payout request",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "requests"
+                ],
+                "summary": "Submit request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.RequestResponse"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/requests/{id}/withdraw": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Withdraw a pending or draft payout request",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "requests"
+                ],
+                "summary": "Withdraw request",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Request ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -573,7 +1226,7 @@
                             "additionalProperties": {
                                 "type": "array",
                                 "items": {
-                                    "$ref": "#/definitions/dto.Plan"
+                                    "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.Plan"
                                 }
                             }
                         }
@@ -610,7 +1263,7 @@
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
-                                "$ref": "#/definitions/dto.DashboardSummaryResponse"
+                                "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.DashboardSummaryResponse"
                             }
                         }
                     },
@@ -679,7 +1332,7 @@
                         "name": "body",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/dto.AcceptInviteRequest"
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.AcceptInviteRequest"
                         }
                     }
                 ],
@@ -689,7 +1342,7 @@
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
-                                "$ref": "#/definitions/dto.MemberResponse"
+                                "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.MemberResponse"
                             }
                         }
                     },
@@ -757,7 +1410,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateOrgRequest"
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.CreateOrgRequest"
                         }
                     }
                 ],
@@ -767,7 +1420,7 @@
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
-                                "$ref": "#/definitions/dto.OrgResponse"
+                                "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.OrgResponse"
                             }
                         }
                     },
@@ -831,7 +1484,7 @@
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
-                                "$ref": "#/definitions/dto.OrgResponse"
+                                "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.OrgResponse"
                             }
                         }
                     },
@@ -904,7 +1557,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.UpdateOrgRequest"
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.UpdateOrgRequest"
                         }
                     }
                 ],
@@ -914,7 +1567,7 @@
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
-                                "$ref": "#/definitions/dto.OrgResponse"
+                                "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.OrgResponse"
                             }
                         }
                     },
@@ -1030,7 +1683,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.AuditLogListResponse"
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.AuditLogListResponse"
                         }
                     },
                     "400": {
@@ -1113,7 +1766,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.InviteRequest"
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.InviteRequest"
                         }
                     }
                 ],
@@ -1123,7 +1776,7 @@
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
-                                "$ref": "#/definitions/dto.InviteResponse"
+                                "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.InviteResponse"
                             }
                         }
                     },
@@ -1198,7 +1851,7 @@
                             "additionalProperties": {
                                 "type": "array",
                                 "items": {
-                                    "$ref": "#/definitions/dto.MemberResponse"
+                                    "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.MemberResponse"
                                 }
                             }
                         }
@@ -1361,7 +2014,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.UpdateRoleRequest"
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.UpdateRoleRequest"
                         }
                     }
                 ],
@@ -1455,7 +2108,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.UpdatePlanRequest"
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.UpdatePlanRequest"
                         }
                     }
                 ],
@@ -1465,7 +2118,7 @@
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
-                                "$ref": "#/definitions/dto.UpdatePlanResponse"
+                                "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.UpdatePlanResponse"
                             }
                         }
                     },
@@ -1547,7 +2200,7 @@
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
-                                "$ref": "#/definitions/dto.OrgStatsResponse"
+                                "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.OrgStatsResponse"
                             }
                         }
                     },
@@ -1636,7 +2289,7 @@
                         "name": "body",
                         "in": "body",
                         "schema": {
-                            "$ref": "#/definitions/dto.ApproveRequest"
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_approvals_dto.ApproveRequest"
                         }
                     }
                 ],
@@ -1646,7 +2299,7 @@
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
-                                "$ref": "#/definitions/dto.ApprovalResponse"
+                                "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_approvals_dto.ApprovalResponse"
                             }
                         }
                     },
@@ -1745,7 +2398,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.MarkPaidRequest"
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_approvals_dto.MarkPaidRequest"
                         }
                     }
                 ],
@@ -1755,7 +2408,7 @@
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
-                                "$ref": "#/definitions/dto.ApprovalResponse"
+                                "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_approvals_dto.ApprovalResponse"
                             }
                         }
                     },
@@ -1854,7 +2507,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.PaymentFailedRequest"
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_approvals_dto.PaymentFailedRequest"
                         }
                     }
                 ],
@@ -1864,7 +2517,7 @@
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
-                                "$ref": "#/definitions/dto.ApprovalResponse"
+                                "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_approvals_dto.ApprovalResponse"
                             }
                         }
                     },
@@ -1963,7 +2616,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.RejectRequest"
+                            "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_approvals_dto.RejectRequest"
                         }
                     }
                 ],
@@ -1973,7 +2626,7 @@
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
-                                "$ref": "#/definitions/dto.ApprovalResponse"
+                                "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_approvals_dto.ApprovalResponse"
                             }
                         }
                     },
@@ -2036,32 +2689,7 @@
         }
     },
     "definitions": {
-        "dto.AcceptInviteRequest": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.AgingBreakdown": {
-            "type": "object",
-            "properties": {
-                "0_to_3_days": {
-                    "type": "integer"
-                },
-                "3_to_7_days": {
-                    "type": "integer"
-                },
-                "7_plus_days": {
-                    "type": "integer"
-                }
-            }
-        },
-        "dto.ApprovalResponse": {
+        "github_com_Firakef1_settle_backend_internal_approvals_dto.ApprovalResponse": {
             "type": "object",
             "properties": {
                 "approver_id": {
@@ -2108,7 +2736,7 @@
                 }
             }
         },
-        "dto.ApproveRequest": {
+        "github_com_Firakef1_settle_backend_internal_approvals_dto.ApproveRequest": {
             "type": "object",
             "properties": {
                 "note": {
@@ -2116,7 +2744,267 @@
                 }
             }
         },
-        "dto.AuditLogItem": {
+        "github_com_Firakef1_settle_backend_internal_approvals_dto.MarkPaidRequest": {
+            "type": "object",
+            "properties": {
+                "payment_method": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_approvals_dto.PaymentFailedRequest": {
+            "type": "object",
+            "properties": {
+                "failure_reason": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_approvals_dto.RejectRequest": {
+            "type": "object",
+            "properties": {
+                "reason": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_auth_dto.DeleteAccountRequest": {
+            "type": "object",
+            "required": [
+                "current_password"
+            ],
+            "properties": {
+                "current_password": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_auth_dto.ForgotPasswordRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_auth_dto.LoginRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_auth_dto.LoginResponse": {
+            "type": "object",
+            "properties": {
+                "orgs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.OrgMembershipDTO"
+                    }
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.UserResponseDTO"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_auth_dto.LogoutRequest": {
+            "type": "object",
+            "required": [
+                "refresh_token"
+            ],
+            "properties": {
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_auth_dto.OrgMembershipDTO": {
+            "type": "object",
+            "properties": {
+                "department": {
+                    "type": "string"
+                },
+                "org_id": {
+                    "type": "string"
+                },
+                "org_name": {
+                    "type": "string"
+                },
+                "org_slug": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_auth_dto.RefreshRequest": {
+            "type": "object",
+            "required": [
+                "refresh_token"
+            ],
+            "properties": {
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_auth_dto.ResendCodeRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_auth_dto.ResetPasswordRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "new_password",
+                "otp"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "new_password": {
+                    "type": "string",
+                    "minLength": 8
+                },
+                "otp": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_auth_dto.SignupRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "name",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 8
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_auth_dto.UserResponseDTO": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "email_verified": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_auth_dto.VerifyEmailRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "verification_code"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "verification_code": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_auth_dto.VerifyEmailResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "orgs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.OrgMembershipDTO"
+                    }
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.UserResponseDTO"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_organaization_dto.AcceptInviteRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_organaization_dto.AgingBreakdown": {
+            "type": "object",
+            "properties": {
+                "0_to_3_days": {
+                    "type": "integer"
+                },
+                "3_to_7_days": {
+                    "type": "integer"
+                },
+                "7_plus_days": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_organaization_dto.AuditLogItem": {
             "type": "object",
             "properties": {
                 "action": {
@@ -2146,21 +3034,21 @@
                 }
             }
         },
-        "dto.AuditLogListResponse": {
+        "github_com_Firakef1_settle_backend_internal_organaization_dto.AuditLogListResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/dto.AuditLogItem"
+                        "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.AuditLogItem"
                     }
                 },
                 "pagination": {
-                    "$ref": "#/definitions/dto.AuditPagination"
+                    "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.AuditPagination"
                 }
             }
         },
-        "dto.AuditPagination": {
+        "github_com_Firakef1_settle_backend_internal_organaization_dto.AuditPagination": {
             "type": "object",
             "properties": {
                 "has_more": {
@@ -2180,7 +3068,7 @@
                 }
             }
         },
-        "dto.CreateOrgRequest": {
+        "github_com_Firakef1_settle_backend_internal_organaization_dto.CreateOrgRequest": {
             "type": "object",
             "required": [
                 "currency",
@@ -2195,11 +3083,11 @@
                 }
             }
         },
-        "dto.DashboardSummaryResponse": {
+        "github_com_Firakef1_settle_backend_internal_organaization_dto.DashboardSummaryResponse": {
             "type": "object",
             "properties": {
                 "aging_breakdown": {
-                    "$ref": "#/definitions/dto.AgingBreakdown"
+                    "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.AgingBreakdown"
                 },
                 "critical_count": {
                     "type": "integer"
@@ -2207,32 +3095,21 @@
                 "escalated_items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/dto.EscalatedItem"
+                        "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.EscalatedItem"
                     }
                 },
                 "pending_count": {
                     "type": "integer"
                 },
                 "urgency_breakdown": {
-                    "$ref": "#/definitions/dto.UrgencyBreakdown"
+                    "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.UrgencyBreakdown"
                 },
                 "urgent_count": {
                     "type": "integer"
                 }
             }
         },
-        "dto.DeleteAccountRequest": {
-            "type": "object",
-            "required": [
-                "current_password"
-            ],
-            "properties": {
-                "current_password": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.EscalatedItem": {
+        "github_com_Firakef1_settle_backend_internal_organaization_dto.EscalatedItem": {
             "type": "object",
             "properties": {
                 "amount": {
@@ -2258,7 +3135,7 @@
                 }
             }
         },
-        "dto.FinancialStats": {
+        "github_com_Firakef1_settle_backend_internal_organaization_dto.FinancialStats": {
             "type": "object",
             "properties": {
                 "currency": {
@@ -2272,18 +3149,7 @@
                 }
             }
         },
-        "dto.ForgotPasswordRequest": {
-            "type": "object",
-            "required": [
-                "email"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.InviteRequest": {
+        "github_com_Firakef1_settle_backend_internal_organaization_dto.InviteRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -2298,7 +3164,7 @@
                 }
             }
         },
-        "dto.InviteResponse": {
+        "github_com_Firakef1_settle_backend_internal_organaization_dto.InviteResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -2324,61 +3190,7 @@
                 }
             }
         },
-        "dto.LoginRequest": {
-            "type": "object",
-            "required": [
-                "email",
-                "password"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.LoginResponse": {
-            "type": "object",
-            "properties": {
-                "orgs": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.OrgMembershipDTO"
-                    }
-                },
-                "refresh_token": {
-                    "type": "string"
-                },
-                "token": {
-                    "type": "string"
-                },
-                "user": {
-                    "$ref": "#/definitions/dto.UserResponseDTO"
-                }
-            }
-        },
-        "dto.LogoutRequest": {
-            "type": "object",
-            "required": [
-                "refresh_token"
-            ],
-            "properties": {
-                "refresh_token": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.MarkPaidRequest": {
-            "type": "object",
-            "properties": {
-                "payment_method": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.MemberCounts": {
+        "github_com_Firakef1_settle_backend_internal_organaization_dto.MemberCounts": {
             "type": "object",
             "properties": {
                 "finance": {
@@ -2395,7 +3207,7 @@
                 }
             }
         },
-        "dto.MemberResponse": {
+        "github_com_Firakef1_settle_backend_internal_organaization_dto.MemberResponse": {
             "type": "object",
             "properties": {
                 "email": {
@@ -2415,27 +3227,7 @@
                 }
             }
         },
-        "dto.OrgMembershipDTO": {
-            "type": "object",
-            "properties": {
-                "department": {
-                    "type": "string"
-                },
-                "org_id": {
-                    "type": "string"
-                },
-                "org_name": {
-                    "type": "string"
-                },
-                "org_slug": {
-                    "type": "string"
-                },
-                "role": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.OrgResponse": {
+        "github_com_Firakef1_settle_backend_internal_organaization_dto.OrgResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -2461,35 +3253,27 @@
                 }
             }
         },
-        "dto.OrgStatsResponse": {
+        "github_com_Firakef1_settle_backend_internal_organaization_dto.OrgStatsResponse": {
             "type": "object",
             "properties": {
                 "financials": {
-                    "$ref": "#/definitions/dto.FinancialStats"
+                    "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.FinancialStats"
                 },
                 "member_counts": {
-                    "$ref": "#/definitions/dto.MemberCounts"
+                    "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.MemberCounts"
                 },
                 "org_id": {
                     "type": "string"
                 },
                 "plan_usage": {
-                    "$ref": "#/definitions/dto.PlanUsageStats"
+                    "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.PlanUsageStats"
                 },
                 "request_stats": {
-                    "$ref": "#/definitions/dto.RequestStats"
+                    "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.RequestStats"
                 }
             }
         },
-        "dto.PaymentFailedRequest": {
-            "type": "object",
-            "properties": {
-                "failure_reason": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.Plan": {
+        "github_com_Firakef1_settle_backend_internal_organaization_dto.Plan": {
             "type": "object",
             "properties": {
                 "features": {
@@ -2517,7 +3301,7 @@
                 }
             }
         },
-        "dto.PlanUsageStats": {
+        "github_com_Firakef1_settle_backend_internal_organaization_dto.PlanUsageStats": {
             "type": "object",
             "properties": {
                 "current_plan": {
@@ -2539,26 +3323,7 @@
                 }
             }
         },
-        "dto.RefreshRequest": {
-            "type": "object",
-            "required": [
-                "refresh_token"
-            ],
-            "properties": {
-                "refresh_token": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.RejectRequest": {
-            "type": "object",
-            "properties": {
-                "reason": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.RequestStats": {
+        "github_com_Firakef1_settle_backend_internal_organaization_dto.RequestStats": {
             "type": "object",
             "properties": {
                 "approved": {
@@ -2584,58 +3349,7 @@
                 }
             }
         },
-        "dto.ResendCodeRequest": {
-            "type": "object",
-            "required": [
-                "email"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.ResetPasswordRequest": {
-            "type": "object",
-            "required": [
-                "email",
-                "new_password",
-                "otp"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "new_password": {
-                    "type": "string",
-                    "minLength": 8
-                },
-                "otp": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.SignupRequest": {
-            "type": "object",
-            "required": [
-                "email",
-                "name",
-                "password"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string",
-                    "minLength": 8
-                }
-            }
-        },
-        "dto.UpdateOrgRequest": {
+        "github_com_Firakef1_settle_backend_internal_organaization_dto.UpdateOrgRequest": {
             "type": "object",
             "properties": {
                 "currency": {
@@ -2646,7 +3360,7 @@
                 }
             }
         },
-        "dto.UpdatePlanRequest": {
+        "github_com_Firakef1_settle_backend_internal_organaization_dto.UpdatePlanRequest": {
             "type": "object",
             "required": [
                 "plan"
@@ -2657,7 +3371,7 @@
                 }
             }
         },
-        "dto.UpdatePlanResponse": {
+        "github_com_Firakef1_settle_backend_internal_organaization_dto.UpdatePlanResponse": {
             "type": "object",
             "properties": {
                 "org_id": {
@@ -2671,7 +3385,7 @@
                 }
             }
         },
-        "dto.UpdateRoleRequest": {
+        "github_com_Firakef1_settle_backend_internal_organaization_dto.UpdateRoleRequest": {
             "type": "object",
             "required": [
                 "role"
@@ -2682,7 +3396,7 @@
                 }
             }
         },
-        "dto.UrgencyBreakdown": {
+        "github_com_Firakef1_settle_backend_internal_organaization_dto.UrgencyBreakdown": {
             "type": "object",
             "properties": {
                 "critical": {
@@ -2696,64 +3410,241 @@
                 }
             }
         },
-        "dto.UserResponseDTO": {
+        "github_com_Firakef1_settle_backend_internal_requests_dto.AddCommentDTO": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_requests_dto.ApprovalResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "description": "Simple stub for approval domain interactions if needed later",
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_requests_dto.CommentResponse": {
+            "type": "object",
+            "properties": {
+                "author": {
+                    "type": "string"
+                },
+                "author_id": {
+                    "type": "string"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_requests_dto.CreateRequestDTO": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "purpose": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "urgency": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_requests_dto.PaginationMeta": {
+            "type": "object",
+            "properties": {
+                "has_more": {
+                    "type": "boolean"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_requests_dto.ReceiptResponse": {
             "type": "object",
             "properties": {
                 "created_at": {
                     "type": "string"
                 },
-                "email": {
+                "file_path": {
                     "type": "string"
                 },
-                "email_verified": {
-                    "type": "boolean"
+                "id": {
+                    "type": "string"
+                },
+                "ocr_results": {
+                    "type": "string"
+                },
+                "ocr_status": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_requests_dto.RequestListItem": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "days_pending": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "purpose": {
+                    "type": "string"
+                },
+                "requester": {
+                    "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.RequesterResponse"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "urgency": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_requests_dto.RequestListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.RequestListItem"
+                    }
+                },
+                "meta": {
+                    "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.PaginationMeta"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_requests_dto.RequestResponse": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "approval": {
+                    "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.ApprovalResponse"
+                },
+                "comments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.CommentResponse"
+                    }
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "purpose": {
+                    "type": "string"
+                },
+                "receipts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.ReceiptResponse"
+                    }
+                },
+                "requester": {
+                    "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.RequesterResponse"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "submitted_at": {
+                    "type": "string"
+                },
+                "timeline": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.TimelineEvent"
+                    }
+                },
+                "type": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "urgency": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_requests_dto.RequesterResponse": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
                 },
                 "id": {
                     "type": "string"
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "github_com_Firakef1_settle_backend_internal_requests_dto.ResubmitRequestDTO": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
                 },
-                "status": {
+                "purpose": {
+                    "type": "string"
+                },
+                "receipt_mode": {
+                    "type": "string"
+                },
+                "urgency": {
                     "type": "string"
                 }
             }
         },
-        "dto.VerifyEmailRequest": {
-            "type": "object",
-            "required": [
-                "email",
-                "verification_code"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "verification_code": {
-                    "type": "string"
-                }
-            }
-        },
-        "dto.VerifyEmailResponse": {
+        "github_com_Firakef1_settle_backend_internal_requests_dto.TimelineEvent": {
             "type": "object",
             "properties": {
-                "message": {
+                "actor": {
                     "type": "string"
                 },
-                "orgs": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/dto.OrgMembershipDTO"
-                    }
-                },
-                "refresh_token": {
+                "details": {
                     "type": "string"
                 },
-                "token": {
+                "timestamp": {
                     "type": "string"
                 },
-                "user": {
-                    "$ref": "#/definitions/dto.UserResponseDTO"
+                "type": {
+                    "type": "string"
                 }
             }
         }
