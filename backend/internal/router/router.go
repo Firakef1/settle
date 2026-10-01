@@ -8,6 +8,7 @@ import (
 	approvalhandler "github.com/Firakef1/settle/backend/internal/approvals/handler"
 	authHandler "github.com/Firakef1/settle/backend/internal/auth/handler"
 	orghandler "github.com/Firakef1/settle/backend/internal/organaization/handler"
+	requestshandler "github.com/Firakef1/settle/backend/internal/requests/handler"
 )
 
 // Handlers holds all domain handlers to be registered in the router.
@@ -21,7 +22,7 @@ type Handlers struct {
 	Dashboard    *orghandler.DashboardHandler
 	Billing      *orghandler.BillingHandler
 	Approval     *approvalhandler.ApprovalHandler
-	// TODO: Add other domain handlers here (Requests, Receipts, etc.)
+	Request      *requestshandler.RequestHandler
 }
 
 // SetupRouter initializes the Gin router and registers all domain routes.
@@ -41,7 +42,7 @@ func SetupRouter(h *Handlers) *gin.Engine {
 		RegisterAuthRoutes(apiV1, h.Auth, h.Verification)
 		RegisterOrganizationRoutes(apiV1, h.Org, h.Member, h.Invitation, h.Audit, h.Dashboard, h.Billing)
 		RegisterApprovalRoutes(apiV1, h.Approval)
-		// TODO: Register other domain routes here (requests, receipts, etc.)
+		RegisterRequestRoutes(apiV1, h.Request)
 	}
 
 	// v1 group - backwards compatibility
@@ -50,6 +51,7 @@ func SetupRouter(h *Handlers) *gin.Engine {
 		RegisterAuthRoutes(v1, h.Auth, h.Verification)
 		RegisterOrganizationRoutes(v1, h.Org, h.Member, h.Invitation, h.Audit, h.Dashboard, h.Billing)
 		RegisterApprovalRoutes(v1, h.Approval)
+		RegisterRequestRoutes(v1, h.Request)
 	}
 
 	return route

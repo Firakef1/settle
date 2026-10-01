@@ -1,22 +1,6 @@
 basePath: /api/v1
 definitions:
-  dto.AcceptInviteRequest:
-    properties:
-      name:
-        type: string
-      password:
-        type: string
-    type: object
-  dto.AgingBreakdown:
-    properties:
-      0_to_3_days:
-        type: integer
-      3_to_7_days:
-        type: integer
-      7_plus_days:
-        type: integer
-    type: object
-  dto.ApprovalResponse:
+  github_com_Firakef1_settle_backend_internal_approvals_dto.ApprovalResponse:
     properties:
       approver_id:
         type: string
@@ -47,12 +31,182 @@ definitions:
       updated_at:
         type: string
     type: object
-  dto.ApproveRequest:
+  github_com_Firakef1_settle_backend_internal_approvals_dto.ApproveRequest:
     properties:
       note:
         type: string
     type: object
-  dto.AuditLogItem:
+  github_com_Firakef1_settle_backend_internal_approvals_dto.MarkPaidRequest:
+    properties:
+      payment_method:
+        type: string
+    type: object
+  github_com_Firakef1_settle_backend_internal_approvals_dto.PaymentFailedRequest:
+    properties:
+      failure_reason:
+        type: string
+    type: object
+  github_com_Firakef1_settle_backend_internal_approvals_dto.RejectRequest:
+    properties:
+      reason:
+        type: string
+    type: object
+  github_com_Firakef1_settle_backend_internal_auth_dto.DeleteAccountRequest:
+    properties:
+      current_password:
+        type: string
+    required:
+    - current_password
+    type: object
+  github_com_Firakef1_settle_backend_internal_auth_dto.ForgotPasswordRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  github_com_Firakef1_settle_backend_internal_auth_dto.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  github_com_Firakef1_settle_backend_internal_auth_dto.LoginResponse:
+    properties:
+      orgs:
+        items:
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.OrgMembershipDTO'
+        type: array
+      refresh_token:
+        type: string
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.UserResponseDTO'
+    type: object
+  github_com_Firakef1_settle_backend_internal_auth_dto.LogoutRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  github_com_Firakef1_settle_backend_internal_auth_dto.OrgMembershipDTO:
+    properties:
+      department:
+        type: string
+      org_id:
+        type: string
+      org_name:
+        type: string
+      org_slug:
+        type: string
+      role:
+        type: string
+    type: object
+  github_com_Firakef1_settle_backend_internal_auth_dto.RefreshRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  github_com_Firakef1_settle_backend_internal_auth_dto.ResendCodeRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  github_com_Firakef1_settle_backend_internal_auth_dto.ResetPasswordRequest:
+    properties:
+      email:
+        type: string
+      new_password:
+        minLength: 8
+        type: string
+      otp:
+        type: string
+    required:
+    - email
+    - new_password
+    - otp
+    type: object
+  github_com_Firakef1_settle_backend_internal_auth_dto.SignupRequest:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        minLength: 8
+        type: string
+    required:
+    - email
+    - name
+    - password
+    type: object
+  github_com_Firakef1_settle_backend_internal_auth_dto.UserResponseDTO:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      email_verified:
+        type: boolean
+      id:
+        type: string
+      name:
+        type: string
+      status:
+        type: string
+    type: object
+  github_com_Firakef1_settle_backend_internal_auth_dto.VerifyEmailRequest:
+    properties:
+      email:
+        type: string
+      verification_code:
+        type: string
+    required:
+    - email
+    - verification_code
+    type: object
+  github_com_Firakef1_settle_backend_internal_auth_dto.VerifyEmailResponse:
+    properties:
+      message:
+        type: string
+      orgs:
+        items:
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.OrgMembershipDTO'
+        type: array
+      refresh_token:
+        type: string
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.UserResponseDTO'
+    type: object
+  github_com_Firakef1_settle_backend_internal_organaization_dto.AcceptInviteRequest:
+    properties:
+      name:
+        type: string
+      password:
+        type: string
+    type: object
+  github_com_Firakef1_settle_backend_internal_organaization_dto.AgingBreakdown:
+    properties:
+      0_to_3_days:
+        type: integer
+      3_to_7_days:
+        type: integer
+      7_plus_days:
+        type: integer
+    type: object
+  github_com_Firakef1_settle_backend_internal_organaization_dto.AuditLogItem:
     properties:
       action:
         type: string
@@ -72,16 +226,16 @@ definitions:
       target_id:
         type: string
     type: object
-  dto.AuditLogListResponse:
+  github_com_Firakef1_settle_backend_internal_organaization_dto.AuditLogListResponse:
     properties:
       data:
         items:
-          $ref: '#/definitions/dto.AuditLogItem'
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.AuditLogItem'
         type: array
       pagination:
-        $ref: '#/definitions/dto.AuditPagination'
+        $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.AuditPagination'
     type: object
-  dto.AuditPagination:
+  github_com_Firakef1_settle_backend_internal_organaization_dto.AuditPagination:
     properties:
       has_more:
         type: boolean
@@ -94,7 +248,7 @@ definitions:
       total:
         type: integer
     type: object
-  dto.CreateOrgRequest:
+  github_com_Firakef1_settle_backend_internal_organaization_dto.CreateOrgRequest:
     properties:
       currency:
         type: string
@@ -104,31 +258,24 @@ definitions:
     - currency
     - name
     type: object
-  dto.DashboardSummaryResponse:
+  github_com_Firakef1_settle_backend_internal_organaization_dto.DashboardSummaryResponse:
     properties:
       aging_breakdown:
-        $ref: '#/definitions/dto.AgingBreakdown'
+        $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.AgingBreakdown'
       critical_count:
         type: integer
       escalated_items:
         items:
-          $ref: '#/definitions/dto.EscalatedItem'
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.EscalatedItem'
         type: array
       pending_count:
         type: integer
       urgency_breakdown:
-        $ref: '#/definitions/dto.UrgencyBreakdown'
+        $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.UrgencyBreakdown'
       urgent_count:
         type: integer
     type: object
-  dto.DeleteAccountRequest:
-    properties:
-      current_password:
-        type: string
-    required:
-    - current_password
-    type: object
-  dto.EscalatedItem:
+  github_com_Firakef1_settle_backend_internal_organaization_dto.EscalatedItem:
     properties:
       amount:
         type: number
@@ -145,7 +292,7 @@ definitions:
       urgency:
         type: string
     type: object
-  dto.FinancialStats:
+  github_com_Firakef1_settle_backend_internal_organaization_dto.FinancialStats:
     properties:
       currency:
         type: string
@@ -154,14 +301,7 @@ definitions:
       total_spent:
         type: number
     type: object
-  dto.ForgotPasswordRequest:
-    properties:
-      email:
-        type: string
-    required:
-    - email
-    type: object
-  dto.InviteRequest:
+  github_com_Firakef1_settle_backend_internal_organaization_dto.InviteRequest:
     properties:
       email:
         type: string
@@ -171,7 +311,7 @@ definitions:
     - email
     - role
     type: object
-  dto.InviteResponse:
+  github_com_Firakef1_settle_backend_internal_organaization_dto.InviteResponse:
     properties:
       created_at:
         type: string
@@ -188,42 +328,7 @@ definitions:
       token:
         type: string
     type: object
-  dto.LoginRequest:
-    properties:
-      email:
-        type: string
-      password:
-        type: string
-    required:
-    - email
-    - password
-    type: object
-  dto.LoginResponse:
-    properties:
-      orgs:
-        items:
-          $ref: '#/definitions/dto.OrgMembershipDTO'
-        type: array
-      refresh_token:
-        type: string
-      token:
-        type: string
-      user:
-        $ref: '#/definitions/dto.UserResponseDTO'
-    type: object
-  dto.LogoutRequest:
-    properties:
-      refresh_token:
-        type: string
-    required:
-    - refresh_token
-    type: object
-  dto.MarkPaidRequest:
-    properties:
-      payment_method:
-        type: string
-    type: object
-  dto.MemberCounts:
+  github_com_Firakef1_settle_backend_internal_organaization_dto.MemberCounts:
     properties:
       finance:
         type: integer
@@ -234,7 +339,7 @@ definitions:
       total:
         type: integer
     type: object
-  dto.MemberResponse:
+  github_com_Firakef1_settle_backend_internal_organaization_dto.MemberResponse:
     properties:
       email:
         type: string
@@ -247,20 +352,7 @@ definitions:
       user_id:
         type: string
     type: object
-  dto.OrgMembershipDTO:
-    properties:
-      department:
-        type: string
-      org_id:
-        type: string
-      org_name:
-        type: string
-      org_slug:
-        type: string
-      role:
-        type: string
-    type: object
-  dto.OrgResponse:
+  github_com_Firakef1_settle_backend_internal_organaization_dto.OrgResponse:
     properties:
       created_at:
         type: string
@@ -277,25 +369,20 @@ definitions:
       updated_at:
         type: string
     type: object
-  dto.OrgStatsResponse:
+  github_com_Firakef1_settle_backend_internal_organaization_dto.OrgStatsResponse:
     properties:
       financials:
-        $ref: '#/definitions/dto.FinancialStats'
+        $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.FinancialStats'
       member_counts:
-        $ref: '#/definitions/dto.MemberCounts'
+        $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.MemberCounts'
       org_id:
         type: string
       plan_usage:
-        $ref: '#/definitions/dto.PlanUsageStats'
+        $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.PlanUsageStats'
       request_stats:
-        $ref: '#/definitions/dto.RequestStats'
+        $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.RequestStats'
     type: object
-  dto.PaymentFailedRequest:
-    properties:
-      failure_reason:
-        type: string
-    type: object
-  dto.Plan:
+  github_com_Firakef1_settle_backend_internal_organaization_dto.Plan:
     properties:
       features:
         items:
@@ -314,7 +401,7 @@ definitions:
         description: 0 represents unlimited
         type: integer
     type: object
-  dto.PlanUsageStats:
+  github_com_Firakef1_settle_backend_internal_organaization_dto.PlanUsageStats:
     properties:
       current_plan:
         type: string
@@ -329,19 +416,7 @@ definitions:
         description: 0 = unlimited
         type: integer
     type: object
-  dto.RefreshRequest:
-    properties:
-      refresh_token:
-        type: string
-    required:
-    - refresh_token
-    type: object
-  dto.RejectRequest:
-    properties:
-      reason:
-        type: string
-    type: object
-  dto.RequestStats:
+  github_com_Firakef1_settle_backend_internal_organaization_dto.RequestStats:
     properties:
       approved:
         type: integer
@@ -358,56 +433,21 @@ definitions:
       withdrawn:
         type: integer
     type: object
-  dto.ResendCodeRequest:
-    properties:
-      email:
-        type: string
-    required:
-    - email
-    type: object
-  dto.ResetPasswordRequest:
-    properties:
-      email:
-        type: string
-      new_password:
-        minLength: 8
-        type: string
-      otp:
-        type: string
-    required:
-    - email
-    - new_password
-    - otp
-    type: object
-  dto.SignupRequest:
-    properties:
-      email:
-        type: string
-      name:
-        type: string
-      password:
-        minLength: 8
-        type: string
-    required:
-    - email
-    - name
-    - password
-    type: object
-  dto.UpdateOrgRequest:
+  github_com_Firakef1_settle_backend_internal_organaization_dto.UpdateOrgRequest:
     properties:
       currency:
         type: string
       name:
         type: string
     type: object
-  dto.UpdatePlanRequest:
+  github_com_Firakef1_settle_backend_internal_organaization_dto.UpdatePlanRequest:
     properties:
       plan:
         type: string
     required:
     - plan
     type: object
-  dto.UpdatePlanResponse:
+  github_com_Firakef1_settle_backend_internal_organaization_dto.UpdatePlanResponse:
     properties:
       org_id:
         type: string
@@ -416,14 +456,14 @@ definitions:
       updated_at:
         type: string
     type: object
-  dto.UpdateRoleRequest:
+  github_com_Firakef1_settle_backend_internal_organaization_dto.UpdateRoleRequest:
     properties:
       role:
         type: string
     required:
     - role
     type: object
-  dto.UrgencyBreakdown:
+  github_com_Firakef1_settle_backend_internal_organaization_dto.UrgencyBreakdown:
     properties:
       critical:
         type: integer
@@ -432,45 +472,160 @@ definitions:
       urgent:
         type: integer
     type: object
-  dto.UserResponseDTO:
+  github_com_Firakef1_settle_backend_internal_requests_dto.AddCommentDTO:
+    properties:
+      content:
+        type: string
+    type: object
+  github_com_Firakef1_settle_backend_internal_requests_dto.ApprovalResponse:
+    properties:
+      status:
+        description: Simple stub for approval domain interactions if needed later
+        type: string
+    type: object
+  github_com_Firakef1_settle_backend_internal_requests_dto.CommentResponse:
+    properties:
+      author:
+        type: string
+      author_id:
+        type: string
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+    type: object
+  github_com_Firakef1_settle_backend_internal_requests_dto.CreateRequestDTO:
+    properties:
+      amount:
+        type: number
+      purpose:
+        type: string
+      type:
+        type: string
+      urgency:
+        type: string
+    type: object
+  github_com_Firakef1_settle_backend_internal_requests_dto.PaginationMeta:
+    properties:
+      has_more:
+        type: boolean
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
+  github_com_Firakef1_settle_backend_internal_requests_dto.ReceiptResponse:
     properties:
       created_at:
         type: string
+      file_path:
+        type: string
+      id:
+        type: string
+      ocr_results:
+        type: string
+      ocr_status:
+        type: string
+    type: object
+  github_com_Firakef1_settle_backend_internal_requests_dto.RequestListItem:
+    properties:
+      amount:
+        type: number
+      created_at:
+        type: string
+      days_pending:
+        type: integer
+      id:
+        type: string
+      purpose:
+        type: string
+      requester:
+        $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.RequesterResponse'
+      status:
+        type: string
+      urgency:
+        type: string
+    type: object
+  github_com_Firakef1_settle_backend_internal_requests_dto.RequestListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.RequestListItem'
+        type: array
+      meta:
+        $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.PaginationMeta'
+    type: object
+  github_com_Firakef1_settle_backend_internal_requests_dto.RequestResponse:
+    properties:
+      amount:
+        type: number
+      approval:
+        $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.ApprovalResponse'
+      comments:
+        items:
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.CommentResponse'
+        type: array
+      created_at:
+        type: string
+      id:
+        type: string
+      purpose:
+        type: string
+      receipts:
+        items:
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.ReceiptResponse'
+        type: array
+      requester:
+        $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.RequesterResponse'
+      status:
+        type: string
+      submitted_at:
+        type: string
+      timeline:
+        items:
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.TimelineEvent'
+        type: array
+      type:
+        type: string
+      updated_at:
+        type: string
+      urgency:
+        type: string
+    type: object
+  github_com_Firakef1_settle_backend_internal_requests_dto.RequesterResponse:
+    properties:
       email:
         type: string
-      email_verified:
-        type: boolean
       id:
         type: string
       name:
         type: string
-      status:
+    type: object
+  github_com_Firakef1_settle_backend_internal_requests_dto.ResubmitRequestDTO:
+    properties:
+      amount:
+        type: number
+      purpose:
+        type: string
+      receipt_mode:
+        type: string
+      urgency:
         type: string
     type: object
-  dto.VerifyEmailRequest:
+  github_com_Firakef1_settle_backend_internal_requests_dto.TimelineEvent:
     properties:
-      email:
+      actor:
         type: string
-      verification_code:
+      details:
         type: string
-    required:
-    - email
-    - verification_code
-    type: object
-  dto.VerifyEmailResponse:
-    properties:
-      message:
+      timestamp:
         type: string
-      orgs:
-        items:
-          $ref: '#/definitions/dto.OrgMembershipDTO'
-        type: array
-      refresh_token:
+      type:
         type: string
-      token:
-        type: string
-      user:
-        $ref: '#/definitions/dto.UserResponseDTO'
     type: object
 info:
   contact: {}
@@ -489,7 +644,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/dto.ForgotPasswordRequest'
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.ForgotPasswordRequest'
       produces:
       - application/json
       responses:
@@ -525,14 +680,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/dto.LoginRequest'
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.LoginResponse'
+            $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.LoginResponse'
         "400":
           description: Bad Request
           schema:
@@ -571,7 +726,7 @@ paths:
         in: body
         name: request
         schema:
-          $ref: '#/definitions/dto.LogoutRequest'
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.LogoutRequest'
       produces:
       - application/json
       responses:
@@ -598,7 +753,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/dto.DeleteAccountRequest'
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.DeleteAccountRequest'
       produces:
       - application/json
       responses:
@@ -655,14 +810,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/dto.RefreshRequest'
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.RefreshRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.LoginResponse'
+            $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.LoginResponse'
         "400":
           description: Bad Request
           schema:
@@ -702,7 +857,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/dto.ResendCodeRequest'
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.ResendCodeRequest'
       produces:
       - application/json
       responses:
@@ -738,7 +893,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/dto.ResetPasswordRequest'
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.ResetPasswordRequest'
       produces:
       - application/json
       responses:
@@ -775,7 +930,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/dto.SignupRequest'
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.SignupRequest'
       produces:
       - application/json
       responses:
@@ -817,14 +972,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/dto.VerifyEmailRequest'
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.VerifyEmailRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.VerifyEmailResponse'
+            $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_auth_dto.VerifyEmailResponse'
         "400":
           description: Bad Request
           schema:
@@ -840,6 +995,428 @@ paths:
       summary: Verify email address
       tags:
       - auth
+  /requests:
+    get:
+      description: List requests with filtering and pagination
+      parameters:
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      - description: Filter by urgency
+        in: query
+        name: urgency
+        type: string
+      - description: Filter by requester
+        in: query
+        name: requester_id
+        type: string
+      - description: Sort by field (e.g., created_at)
+        in: query
+        name: sort_by
+        type: string
+      - description: Sort order (asc, desc)
+        in: query
+        name: sort_order
+        type: string
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.RequestListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List requests
+      tags:
+      - requests
+    post:
+      consumes:
+      - application/json
+      description: Create a new payout request
+      parameters:
+      - description: Create Request DTO
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.CreateRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.RequestResponse'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create request
+      tags:
+      - requests
+  /requests/{id}:
+    get:
+      description: Get full request details including receipts and comments
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.RequestResponse'
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get request details
+      tags:
+      - requests
+  /requests/{id}/comments:
+    post:
+      consumes:
+      - application/json
+      description: Add a comment to a request
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Add Comment DTO
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.AddCommentDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.CommentResponse'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Add comment
+      tags:
+      - requests
+  /requests/{id}/receipts:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a receipt to a draft request
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Receipt file
+        in: formData
+        name: receipt
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.ReceiptResponse'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Upload receipt
+      tags:
+      - requests
+  /requests/{id}/resubmit:
+    post:
+      consumes:
+      - application/json
+      description: Resubmit a rejected or failed payout request
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Resubmit Request DTO
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.ResubmitRequestDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.RequestResponse'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Resubmit request
+      tags:
+      - requests
+  /requests/{id}/submit:
+    post:
+      description: Submit a draft payout request
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.RequestResponse'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Submit request
+      tags:
+      - requests
+  /requests/{id}/withdraw:
+    put:
+      description: Withdraw a pending or draft payout request
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Withdraw request
+      tags:
+      - requests
   /v1/billing/plans:
     get:
       description: Returns all available subscription plans with pricing, feature
@@ -852,7 +1429,7 @@ paths:
           schema:
             additionalProperties:
               items:
-                $ref: '#/definitions/dto.Plan'
+                $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.Plan'
               type: array
             type: object
       summary: Get available subscription plans
@@ -875,7 +1452,7 @@ paths:
           description: OK
           schema:
             additionalProperties:
-              $ref: '#/definitions/dto.DashboardSummaryResponse'
+              $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.DashboardSummaryResponse'
             type: object
         "400":
           description: Bad Request
@@ -923,7 +1500,7 @@ paths:
         in: body
         name: body
         schema:
-          $ref: '#/definitions/dto.AcceptInviteRequest'
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.AcceptInviteRequest'
       produces:
       - application/json
       responses:
@@ -931,7 +1508,7 @@ paths:
           description: Created
           schema:
             additionalProperties:
-              $ref: '#/definitions/dto.MemberResponse'
+              $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.MemberResponse'
             type: object
         "400":
           description: Bad Request
@@ -973,7 +1550,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.CreateOrgRequest'
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.CreateOrgRequest'
       produces:
       - application/json
       responses:
@@ -981,7 +1558,7 @@ paths:
           description: Created
           schema:
             additionalProperties:
-              $ref: '#/definitions/dto.OrgResponse'
+              $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.OrgResponse'
             type: object
         "400":
           description: Bad Request
@@ -1023,7 +1600,7 @@ paths:
           description: OK
           schema:
             additionalProperties:
-              $ref: '#/definitions/dto.OrgResponse'
+              $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.OrgResponse'
             type: object
         "401":
           description: Unauthorized
@@ -1070,7 +1647,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.UpdateOrgRequest'
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.UpdateOrgRequest'
       produces:
       - application/json
       responses:
@@ -1078,7 +1655,7 @@ paths:
           description: OK
           schema:
             additionalProperties:
-              $ref: '#/definitions/dto.OrgResponse'
+              $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.OrgResponse'
             type: object
         "400":
           description: Bad Request
@@ -1155,7 +1732,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dto.AuditLogListResponse'
+            $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.AuditLogListResponse'
         "400":
           description: Bad Request
           schema:
@@ -1208,7 +1785,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.InviteRequest'
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.InviteRequest'
       produces:
       - application/json
       responses:
@@ -1216,7 +1793,7 @@ paths:
           description: Created
           schema:
             additionalProperties:
-              $ref: '#/definitions/dto.InviteResponse'
+              $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.InviteResponse'
             type: object
         "400":
           description: Bad Request
@@ -1265,7 +1842,7 @@ paths:
           schema:
             additionalProperties:
               items:
-                $ref: '#/definitions/dto.MemberResponse'
+                $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.MemberResponse'
               type: array
             type: object
         "401":
@@ -1372,7 +1949,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.UpdateRoleRequest'
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.UpdateRoleRequest'
       produces:
       - application/json
       responses:
@@ -1434,7 +2011,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.UpdatePlanRequest'
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.UpdatePlanRequest'
       produces:
       - application/json
       responses:
@@ -1442,7 +2019,7 @@ paths:
           description: OK
           schema:
             additionalProperties:
-              $ref: '#/definitions/dto.UpdatePlanResponse'
+              $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.UpdatePlanResponse'
             type: object
         "400":
           description: Bad Request
@@ -1496,7 +2073,7 @@ paths:
           description: OK
           schema:
             additionalProperties:
-              $ref: '#/definitions/dto.OrgStatsResponse'
+              $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_organaization_dto.OrgStatsResponse'
             type: object
         "400":
           description: Bad Request
@@ -1554,7 +2131,7 @@ paths:
         in: body
         name: body
         schema:
-          $ref: '#/definitions/dto.ApproveRequest'
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_approvals_dto.ApproveRequest'
       produces:
       - application/json
       responses:
@@ -1562,7 +2139,7 @@ paths:
           description: OK
           schema:
             additionalProperties:
-              $ref: '#/definitions/dto.ApprovalResponse'
+              $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_approvals_dto.ApprovalResponse'
             type: object
         "400":
           description: Bad Request
@@ -1627,7 +2204,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.MarkPaidRequest'
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_approvals_dto.MarkPaidRequest'
       produces:
       - application/json
       responses:
@@ -1635,7 +2212,7 @@ paths:
           description: OK
           schema:
             additionalProperties:
-              $ref: '#/definitions/dto.ApprovalResponse'
+              $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_approvals_dto.ApprovalResponse'
             type: object
         "400":
           description: Bad Request
@@ -1699,7 +2276,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.PaymentFailedRequest'
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_approvals_dto.PaymentFailedRequest'
       produces:
       - application/json
       responses:
@@ -1707,7 +2284,7 @@ paths:
           description: OK
           schema:
             additionalProperties:
-              $ref: '#/definitions/dto.ApprovalResponse'
+              $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_approvals_dto.ApprovalResponse'
             type: object
         "400":
           description: Bad Request
@@ -1772,7 +2349,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.RejectRequest'
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_approvals_dto.RejectRequest'
       produces:
       - application/json
       responses:
@@ -1780,7 +2357,7 @@ paths:
           description: OK
           schema:
             additionalProperties:
-              $ref: '#/definitions/dto.ApprovalResponse'
+              $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_approvals_dto.ApprovalResponse'
             type: object
         "400":
           description: Bad Request
