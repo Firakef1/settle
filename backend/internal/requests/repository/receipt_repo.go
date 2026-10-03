@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"sync"
 	"time"
 
@@ -15,6 +16,8 @@ type ReceiptRepository interface {
 	CopyReceipts(ctx context.Context, oldRequestID, newRequestID string) error
 	CreateReceiptTx(ctx context.Context, tx *sql.Tx, receipt *model.Receipt) error
 	CopyReceiptsTx(ctx context.Context, tx *sql.Tx, oldRequestID, newRequestID string) error
+	GetReceiptByID(ctx context.Context, receiptID string) (*model.Receipt, error)
+	UpdateOCRStatus(ctx context.Context, receiptID, status string, results *string) error
 }
 
 type ReceiptRepo struct {
@@ -92,6 +95,9 @@ func (r *ReceiptRepo) GetByRequestID(ctx context.Context, requestID string) ([]m
 			}
 			receipts = append(receipts, rec)
 		}
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
 		return receipts, nil
 	}
 
@@ -143,4 +149,34 @@ func (r *ReceiptRepo) CopyReceiptsTx(ctx context.Context, tx *sql.Tx, oldRequest
 		return err
 	}
 	return r.CopyReceipts(ctx, oldRequestID, newRequestID)
+}
+
+func (r *ReceiptRepo) GetReceiptByID(ctx context.Context, receiptID string) (*model.Receipt, error) {
+	if r.db != nil {
+		query := `SELECT id, request_id, file_path, ocr_status, ocr_results, created_at FROM receipts WHERE id = $1`
+		var rec model.Receipt
+		err := r.db.QueryRowContext(ctx, query, receiptID).Scan(&rec.ID, &rec.RequestID, &rec.FilePath, &rec.OCRStatus, &rec.OCRResults, &rec.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		return &rec, nil
+	}
+	return nil, errors.New("not found")
+}
+
+func (r *ReceiptRepo) UpdateOCRStatus(ctx context.Context, receiptID, status string, results *string) error {
+	if r.db != nil {
+		query := `UPDATE receipts SET ocr_status = $1, ocr_results = $2 WHERE id = $3`
+		_, err := r.db.ExecContext(ctx, query, status, results, receiptID)
+		return err
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if rec, exists := r.memoryReceipts[receiptID]; exists {
+		rec.OCRStatus = status
+		rec.OCRResults = results
+		return nil
+	}
+	return errors.New("not found")
 }

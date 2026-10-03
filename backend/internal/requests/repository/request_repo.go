@@ -10,6 +10,7 @@ import (
 
 	"github.com/Firakef1/settle/backend/internal/requests/dto"
 	"github.com/Firakef1/settle/backend/internal/requests/model"
+	"github.com/google/uuid"
 )
 
 var (
@@ -25,6 +26,10 @@ type RequestRepository interface {
 	UpdateStatusTx(ctx context.Context, tx *sql.Tx, id, status string, submittedAt *time.Time) error
 	UpdateStatus(ctx context.Context, id, status string) error
 	List(ctx context.Context, orgID string, filters dto.ListFilters) ([]model.Request, int, error)
+	GetTimelineByRequestID(ctx context.Context, requestID string) ([]model.Timeline, error)
+	CreateTimelineTx(ctx context.Context, tx *sql.Tx, timeline *model.Timeline) error
+	GetApprovalStatus(ctx context.Context, requestID string) (string, error)
+	CreateAuditLogTx(ctx context.Context, tx *sql.Tx, orgID, actorID, action, targetType, targetID string) error
 }
 
 type RequestRepo struct {
@@ -231,6 +236,9 @@ func (r *RequestRepo) List(ctx context.Context, orgID string, filters dto.ListFi
 			}
 			requests = append(requests, req)
 		}
+		if err := rows.Err(); err != nil {
+			return nil, 0, err
+		}
 
 		return requests, total, nil
 	}
@@ -278,4 +286,87 @@ func (r *RequestRepo) List(ctx context.Context, orgID string, filters dto.ListFi
 	}
 
 	return matches[offset:end], total, nil
+}
+
+func (r *RequestRepo) GetTimelineByRequestID(ctx context.Context, requestID string) ([]model.Timeline, error) {
+	if r.db != nil {
+		query := `
+			SELECT id, request_id, action, actor_id, actor_name, note, created_at
+			FROM timeline
+			WHERE request_id = $1
+			ORDER BY created_at ASC`
+		rows, err := r.db.QueryContext(ctx, query, requestID)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+
+		var events []model.Timeline
+		for rows.Next() {
+			var t model.Timeline
+			if err := rows.Scan(&t.ID, &t.RequestID, &t.Action, &t.ActorID, &t.ActorName, &t.Note, &t.CreatedAt); err != nil {
+				return nil, err
+			}
+			events = append(events, t)
+		}
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
+		return events, nil
+	}
+	return []model.Timeline{}, nil
+}
+
+func (r *RequestRepo) CreateTimelineTx(ctx context.Context, tx *sql.Tx, t *model.Timeline) error {
+	if r.db != nil {
+		query := `
+			INSERT INTO timeline (id, request_id, action, actor_id, actor_name, note, created_at)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)`
+		var err error
+		if tx != nil {
+			_, err = tx.ExecContext(ctx, query, t.ID, t.RequestID, t.Action, t.ActorID, t.ActorName, t.Note, t.CreatedAt)
+		} else {
+			_, err = r.db.ExecContext(ctx, query, t.ID, t.RequestID, t.Action, t.ActorID, t.ActorName, t.Note, t.CreatedAt)
+		}
+		return err
+	}
+	return nil
+}
+
+func (r *RequestRepo) GetApprovalStatus(ctx context.Context, requestID string) (string, error) {
+	if r.db != nil {
+		query := `
+			SELECT decision
+			FROM approvals
+			WHERE request_id = $1
+			ORDER BY created_at DESC LIMIT 1`
+		var status string
+		err := r.db.QueryRowContext(ctx, query, requestID).Scan(&status)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return "", nil
+			}
+			return "", err
+		}
+		return status, nil
+	}
+	return "", nil
+}
+
+func (r *RequestRepo) CreateAuditLogTx(ctx context.Context, tx *sql.Tx, orgID, actorID, action, targetType, targetID string) error {
+	if r.db != nil {
+		query := `
+			INSERT INTO audit_logs (id, org_id, actor_id, action, target_type, target_id, created_at)
+			VALUES ($1, $2, $3, $4, $5, $6, NOW())`
+
+		id := "AL-" + uuid.New().String()[:8]
+		var err error
+		if tx != nil {
+			_, err = tx.ExecContext(ctx, query, id, orgID, actorID, action, targetType, targetID)
+		} else {
+			_, err = r.db.ExecContext(ctx, query, id, orgID, actorID, action, targetType, targetID)
+		}
+		return err
+	}
+	return nil
 }

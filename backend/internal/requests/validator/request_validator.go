@@ -14,6 +14,7 @@ var (
 	ErrInvalidUrgency = errors.New("urgency must be one of: routine, urgent, critical")
 	ErrInvalidMode    = errors.New("receipt_mode must be one of: carry, new")
 	ErrEmptyContent   = errors.New("comment content cannot be empty")
+	ErrCommentTooLong = errors.New("comment content must be 1000 characters or fewer")
 )
 
 func ValidateCreateRequest(req *dto.CreateRequestDTO) error {
@@ -82,8 +83,12 @@ func ValidateResubmitRequest(req *dto.ResubmitRequestDTO) error {
 }
 
 func ValidateAddComment(req *dto.AddCommentDTO) error {
-	if strings.TrimSpace(req.Content) == "" {
+	trimmed := strings.TrimSpace(req.Content)
+	if trimmed == "" {
 		return ErrEmptyContent
+	}
+	if len(trimmed) > 1000 {
+		return ErrCommentTooLong
 	}
 	return nil
 }

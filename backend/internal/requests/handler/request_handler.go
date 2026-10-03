@@ -7,12 +7,15 @@ import (
 	"net/http"
 	"strconv"
 
+	"os"
+
 	"github.com/gin-gonic/gin"
 
 	"github.com/Firakef1/settle/backend/internal/requests/dto"
 	"github.com/Firakef1/settle/backend/internal/requests/repository"
 	"github.com/Firakef1/settle/backend/internal/requests/service"
 	"github.com/Firakef1/settle/backend/internal/requests/validator"
+	"github.com/Firakef1/settle/backend/internal/shared/config"
 	"github.com/Firakef1/settle/backend/internal/shared/middleware"
 )
 
@@ -291,7 +294,7 @@ func (h *RequestHandler) GetDetail(c *gin.Context) {
 	orgID, role := h.getOrgIDAndRole(c)
 	reqID := c.Param("id")
 
-	isStaff := (role != "admin" && role != "finance")
+	isStaff := (role != "org_admin" && role != "finance")
 	resp, err := h.service.GetDetail(c.Request.Context(), orgID, userID, reqID, isStaff)
 	if err != nil {
 		if errors.Is(err, repository.ErrRequestNotFound) {
@@ -330,16 +333,44 @@ func (h *RequestHandler) UploadReceipt(c *gin.Context) {
 	}
 	orgID, _ := h.getOrgIDAndRole(c)
 	reqID := c.Param("id")
+	if reqID == "" {
+		reqID = c.PostForm("request_id")
+	}
+	if reqID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "request_id is required"})
+		return
+	}
 
-	// Dummy file upload parsing for now. A real implementation would extract
-	// the file from multipart form and save to cloud storage/file system.
 	file, err := c.FormFile("receipt")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "receipt file is required"})
 		return
 	}
 
-	filePath := fmt.Sprintf("/uploads/receipts/%s", file.Filename)
+	if file.Size > 10*1024*1024 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "file size must be less than 10MB"})
+		return
+	}
+
+	contentType := file.Header.Get("Content-Type")
+	if contentType != "image/jpeg" && contentType != "image/png" && contentType != "application/pdf" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "only JPEG, PNG, and PDF files are allowed"})
+		return
+	}
+
+	uploadDir := config.AppConfig.UploadDir
+	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+		log.Printf("[ERROR] Failed to create upload dir: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		return
+	}
+
+	filePath := fmt.Sprintf("%s/%s_%s", uploadDir, reqID, file.Filename)
+	if err := c.SaveUploadedFile(file, filePath); err != nil {
+		log.Printf("[ERROR] Failed to save file: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save file"})
+		return
+	}
 
 	resp, err := h.service.UploadReceipt(c.Request.Context(), orgID, userID, reqID, filePath)
 	if err != nil {
@@ -359,6 +390,9 @@ func (h *RequestHandler) UploadReceipt(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to upload receipt"})
 		return
 	}
+
+	// Trigger OCR process in background (to be implemented)
+	go h.service.ProcessOCRBackground(resp.ID, filePath)
 
 	c.JSON(http.StatusCreated, gin.H{"data": resp})
 }
@@ -384,7 +418,7 @@ func (h *RequestHandler) AddComment(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
-	orgID, _ := h.getOrgIDAndRole(c)
+	orgID, role := h.getOrgIDAndRole(c)
 	reqID := c.Param("id")
 
 	var req dto.AddCommentDTO
@@ -393,10 +427,14 @@ func (h *RequestHandler) AddComment(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.service.AddComment(c.Request.Context(), orgID, userID, reqID, req)
+	resp, err := h.service.AddComment(c.Request.Context(), orgID, userID, role, reqID, req)
 	if err != nil {
-		if errors.Is(err, validator.ErrEmptyContent) {
+		if errors.Is(err, validator.ErrEmptyContent) || errors.Is(err, validator.ErrCommentTooLong) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		if errors.Is(err, service.ErrUnauthorizedRequest) {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 			return
 		}
 		if errors.Is(err, repository.ErrRequestNotFound) {
@@ -409,4 +447,125 @@ func (h *RequestHandler) AddComment(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"data": resp})
+}
+
+// GetPrevious godoc
+// @Summary      Get previous requests
+// @Description  Get the previous requests by the same requester
+// @Tags         requests
+// @Produce      json
+// @Param        id   path      string  true  "Request ID"
+// @Success      200  {object}  map[string]dto.PreviousRequestsResponse
+// @Failure      401  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Security     BearerAuth
+// @Router       /requests/{id}/previous [get]
+func (h *RequestHandler) GetPrevious(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	orgID, role := h.getOrgIDAndRole(c)
+	reqID := c.Param("id")
+
+	resp, err := h.service.GetPreviousRequests(c.Request.Context(), orgID, userID, role, reqID)
+	if err != nil {
+		if errors.Is(err, repository.ErrRequestNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "request not found"})
+			return
+		}
+		if errors.Is(err, service.ErrUnauthorizedRequest) {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			return
+		}
+		log.Printf("[ERROR] Get previous requests failed: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get previous requests"})
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
+}
+
+// GetComments godoc
+// @Summary      Get request comments
+// @Description  Get all comments for a specific request
+// @Tags         requests
+// @Produce      json
+// @Param        id   path      string  true  "Request ID"
+// @Success      200  {object}  map[string][]dto.CommentResponse
+// @Failure      401  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Security     BearerAuth
+// @Router       /requests/{id}/comments [get]
+func (h *RequestHandler) GetComments(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	orgID, role := h.getOrgIDAndRole(c)
+	reqID := c.Param("id")
+
+	resp, err := h.service.GetComments(c.Request.Context(), orgID, userID, role, reqID)
+	if err != nil {
+		if errors.Is(err, repository.ErrRequestNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "request not found"})
+			return
+		}
+		if errors.Is(err, service.ErrUnauthorizedRequest) {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			return
+		}
+		log.Printf("[ERROR] Get comments failed: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get comments"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": resp})
+}
+
+// GetReceipt godoc
+// @Summary      Get receipt details
+// @Description  Get a single receipt by ID
+// @Tags         requests
+// @Produce      json
+// @Param        id   path      string  true  "Receipt ID"
+// @Success      200  {object}  map[string]dto.ReceiptResponse
+// @Failure      401  {object}  map[string]string
+// @Failure      404  {object}  map[string]string
+// @Failure      500  {object}  map[string]string
+// @Security     BearerAuth
+// @Router       /receipts/{id} [get]
+func (h *RequestHandler) GetReceipt(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	orgID, role := h.getOrgIDAndRole(c)
+	receiptID := c.Param("id")
+
+	resp, err := h.service.GetReceipt(c.Request.Context(), orgID, userID, role, receiptID)
+	if err != nil {
+		if err.Error() == "not found" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "receipt not found"})
+			return
+		}
+		if errors.Is(err, repository.ErrRequestNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "request not found"})
+			return
+		}
+		if errors.Is(err, service.ErrUnauthorizedRequest) {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+			return
+		}
+		log.Printf("[ERROR] Get receipt failed: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get receipt"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": resp})
 }
