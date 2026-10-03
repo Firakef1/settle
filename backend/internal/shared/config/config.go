@@ -64,6 +64,10 @@ type Config struct {
 	PasswordResetOTPTTL time.Duration
 	// PasswordResetMaxAttempts max failed attempts per OTP.
 	PasswordResetMaxAttempts int
+	// UploadDir is where uploaded files are stored.
+	UploadDir string
+	// OCRApiKey is the key for the free OCR API.
+	OCRApiKey string
 }
 
 // AppConfig is the global application configuration.
@@ -103,6 +107,8 @@ func Load() {
 			CodeTTL:      parseDurationOrDefault(os.Getenv("EMAIL_CODE_TTL"), 15*time.Minute),
 			CodeSecret:   codeSecret,
 		},
+		UploadDir: getEnvOrDefault("UPLOAD_DIR", "./uploads"),
+		OCRApiKey: getEnvOrDefault("OCR_API_KEY", ""),
 	}
 	if err := AppConfig.Email.Validate(); err != nil {
 		log.Fatalf("invalid email configuration: %v", err)

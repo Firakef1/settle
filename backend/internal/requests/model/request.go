@@ -16,3 +16,13 @@ type Request struct {
 	CreatedAt     time.Time  `json:"created_at" db:"created_at"`
 	UpdatedAt     time.Time  `json:"updated_at" db:"updated_at"`
 }
+
+type Timeline struct {
+	ID        string    `json:"id" db:"id"`
+	RequestID string    `json:"request_id" db:"request_id"`
+	Action    string    `json:"action" db:"action"`
+	ActorID   string    `json:"actor_id" db:"actor_id"`
+	ActorName string    `json:"actor_name" db:"actor_name"`
+	Note      string    `json:"note" db:"note"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+}

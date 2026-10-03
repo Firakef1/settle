@@ -174,6 +174,9 @@ func (r *UserRepo) GetOrgMemberships(ctx context.Context, userID string) ([]mode
 			}
 			memberships = append(memberships, m)
 		}
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
 		return memberships, nil
 	}
 

@@ -52,10 +52,14 @@ func (r *CommentRepo) CreateComment(ctx context.Context, comment *model.Comment)
 func (r *CommentRepo) GetByRequestID(ctx context.Context, requestID string) ([]model.Comment, error) {
 	if r.db != nil {
 		query := `
-			SELECT id, request_id, author_id, content, created_at, updated_at
-			FROM comments
-			WHERE request_id = $1
-			ORDER BY created_at ASC`
+			SELECT c.id, c.request_id, c.author_id, c.content, c.created_at, c.updated_at,
+			       u.full_name as author, om.role
+			FROM comments c
+			JOIN users u ON c.author_id = u.id
+			JOIN requests req ON req.id = c.request_id
+			JOIN org_members om ON om.user_id = u.id AND om.org_id = req.org_id
+			WHERE c.request_id = $1
+			ORDER BY c.created_at ASC`
 		rows, err := r.db.QueryContext(ctx, query, requestID)
 		if err != nil {
 			return nil, err
@@ -65,10 +69,20 @@ func (r *CommentRepo) GetByRequestID(ctx context.Context, requestID string) ([]m
 		var comments []model.Comment
 		for rows.Next() {
 			var c model.Comment
-			if err := rows.Scan(&c.ID, &c.RequestID, &c.AuthorID, &c.Content, &c.CreatedAt, &c.UpdatedAt); err != nil {
+			var author, role string
+			if err := rows.Scan(&c.ID, &c.RequestID, &c.AuthorID, &c.Content, &c.CreatedAt, &c.UpdatedAt, &author, &role); err != nil {
 				return nil, err
 			}
+			c.AuthorID = c.AuthorID
+			c.Author = author
+			c.Role = role
+			c.Content = c.Content
+			c.CreatedAt = c.CreatedAt
+			c.UpdatedAt = c.UpdatedAt
 			comments = append(comments, c)
+		}
+		if err := rows.Err(); err != nil {
+			return nil, err
 		}
 		return comments, nil
 	}

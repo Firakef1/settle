@@ -82,6 +82,23 @@ func (s *RequestService) Create(ctx context.Context, orgID, userID string, req d
 		return nil, err
 	}
 
+	actorName := "System"
+	reqResp, _ := s.userProvider.GetUserBasicInfo(ctx, userID)
+	if reqResp.Name != "" {
+		actorName = reqResp.Name
+	}
+
+	_ = s.reqRepo.CreateTimelineTx(ctx, nil, &model.Timeline{
+		ID:        uuid.New().String(),
+		RequestID: request.ID,
+		Action:    "Created",
+		ActorID:   userID,
+		ActorName: actorName,
+		Note:      "Request created",
+		CreatedAt: now,
+	})
+	_ = s.reqRepo.CreateAuditLogTx(ctx, nil, orgID, userID, "request_created", "request", request.ID)
+
 	return s.GetDetail(ctx, orgID, userID, reqID, true)
 }
 
@@ -145,7 +162,27 @@ func (s *RequestService) Withdraw(ctx context.Context, orgID, userID, reqID stri
 			return ErrCannotWithdraw
 		}
 
-		return s.reqRepo.UpdateStatusTx(ctx, tx, reqID, "withdrawn", nil)
+		if err := s.reqRepo.UpdateStatusTx(ctx, tx, reqID, "withdrawn", nil); err != nil {
+			return err
+		}
+
+		actorName := "System"
+		reqResp, _ := s.userProvider.GetUserBasicInfo(ctx, userID)
+		if reqResp.Name != "" {
+			actorName = reqResp.Name
+		}
+		_ = s.reqRepo.CreateTimelineTx(ctx, tx, &model.Timeline{
+			ID:        uuid.New().String(),
+			RequestID: reqID,
+			Action:    "Withdrawn",
+			ActorID:   userID,
+			ActorName: actorName,
+			Note:      "Request withdrawn",
+			CreatedAt: time.Now(),
+		})
+		_ = s.reqRepo.CreateAuditLogTx(ctx, tx, orgID, userID, "request_withdrawn", "request", reqID)
+
+		return nil
 	})
 }
 
@@ -234,6 +271,22 @@ func (s *RequestService) Resubmit(ctx context.Context, orgID, userID, reqID stri
 			// It's handled enough for now.
 		}
 
+		actorName := "System"
+		reqResp, _ := s.userProvider.GetUserBasicInfo(ctx, userID)
+		if reqResp.Name != "" {
+			actorName = reqResp.Name
+		}
+		_ = s.reqRepo.CreateTimelineTx(ctx, tx, &model.Timeline{
+			ID:        uuid.New().String(),
+			RequestID: newReq.ID,
+			Action:    "Resubmitted",
+			ActorID:   userID,
+			ActorName: actorName,
+			Note:      fmt.Sprintf("Resubmitted from %s", oldReq.ID),
+			CreatedAt: time.Now(),
+		})
+		_ = s.reqRepo.CreateAuditLogTx(ctx, tx, orgID, userID, "request_resubmitted", "request", newReq.ID)
+
 		return nil
 	})
 	if err != nil {
@@ -244,7 +297,7 @@ func (s *RequestService) Resubmit(ctx context.Context, orgID, userID, reqID stri
 }
 
 func (s *RequestService) List(ctx context.Context, orgID, callerUserID, role string, filters dto.ListFilters) (*dto.RequestListResponse, error) {
-	if role != "admin" && role != "finance" {
+	if role != "org_admin" && role != "finance" {
 		// Staff only sees their own
 		filters.RequesterID = callerUserID
 	} else {
@@ -350,9 +403,30 @@ func (s *RequestService) GetDetail(ctx context.Context, orgID, callerUserID, req
 		commentDTOs[i] = dto.CommentResponse{
 			ID:        c.ID,
 			AuthorID:  c.AuthorID,
+			Author:    c.Author,
 			Content:   c.Content,
 			CreatedAt: c.CreatedAt,
 		}
+	}
+
+	timeline, err := s.reqRepo.GetTimelineByRequestID(ctx, reqID)
+	var timelineDTOs []dto.TimelineEvent
+	if err == nil {
+		timelineDTOs = make([]dto.TimelineEvent, len(timeline))
+		for i, t := range timeline {
+			timelineDTOs[i] = dto.TimelineEvent{
+				Type:      t.Action,
+				Timestamp: t.CreatedAt,
+				Actor:     t.ActorName,
+				Details:   t.Note,
+			}
+		}
+	}
+
+	approvalStatus, _ := s.reqRepo.GetApprovalStatus(ctx, reqID)
+	var approvalResp *dto.ApprovalResponse
+	if approvalStatus != "" {
+		approvalResp = &dto.ApprovalResponse{Status: approvalStatus}
 	}
 
 	var reqResp dto.RequesterResponse
@@ -372,7 +446,9 @@ func (s *RequestService) GetDetail(ctx context.Context, orgID, callerUserID, req
 		Status:      req.Status,
 		Requester:   reqResp,
 		Receipts:    receiptDTOs,
+		Approval:    approvalResp,
 		Comments:    commentDTOs,
+		Timeline:    timelineDTOs,
 		SubmittedAt: req.SubmittedAt,
 		CreatedAt:   req.CreatedAt,
 		UpdatedAt:   req.UpdatedAt,
@@ -405,6 +481,17 @@ func (s *RequestService) UploadReceipt(ctx context.Context, orgID, userID, reqID
 		return nil, err
 	}
 
+	_ = s.reqRepo.CreateTimelineTx(ctx, nil, &model.Timeline{
+		ID:        uuid.New().String(),
+		RequestID: reqID,
+		Action:    "Receipt Uploaded",
+		ActorID:   userID,
+		ActorName: "", // We can fetch actor name if needed, or leave it blank
+		Note:      "Uploaded receipt: " + receipt.ID,
+		CreatedAt: time.Now(),
+	})
+	_ = s.reqRepo.CreateAuditLogTx(ctx, nil, orgID, userID, "receipt_uploaded", "receipt", receipt.ID)
+
 	return &dto.ReceiptResponse{
 		ID:        receipt.ID,
 		FilePath:  receipt.FilePath,
@@ -413,7 +500,7 @@ func (s *RequestService) UploadReceipt(ctx context.Context, orgID, userID, reqID
 	}, nil
 }
 
-func (s *RequestService) AddComment(ctx context.Context, orgID, userID, reqID string, content dto.AddCommentDTO) (*dto.CommentResponse, error) {
+func (s *RequestService) AddComment(ctx context.Context, orgID, userID, role, reqID string, content dto.AddCommentDTO) (*dto.CommentResponse, error) {
 	if err := validator.ValidateAddComment(&content); err != nil {
 		return nil, err
 	}
@@ -424,9 +511,12 @@ func (s *RequestService) AddComment(ctx context.Context, orgID, userID, reqID st
 	if req.OrgID != orgID {
 		return nil, repository.ErrRequestNotFound
 	}
-	// Assuming anyone who can see it can comment (owner, or admin/finance)
-	// We'll just enforce that they are the owner for staff
-	// In a real system, we'd check their role properly here or before calling.
+
+	if role != "org_admin" && role != "finance" {
+		if req.RequesterID != userID {
+			return nil, ErrUnauthorizedRequest
+		}
+	}
 
 	comment := &model.Comment{
 		ID:        uuid.New().String(),
@@ -440,10 +530,135 @@ func (s *RequestService) AddComment(ctx context.Context, orgID, userID, reqID st
 		return nil, err
 	}
 
+	_ = s.reqRepo.CreateTimelineTx(ctx, nil, &model.Timeline{
+		ID:        uuid.New().String(),
+		RequestID: reqID,
+		Action:    "Comment Added",
+		ActorID:   userID,
+		ActorName: "", // we could fetch name
+		Note:      "Added a comment",
+		CreatedAt: time.Now(),
+	})
+
+	_ = s.reqRepo.CreateAuditLogTx(ctx, nil, orgID, userID, "comment_added", "comment", comment.ID)
+
 	return &dto.CommentResponse{
 		ID:        comment.ID,
 		AuthorID:  comment.AuthorID,
 		Content:   comment.Content,
 		CreatedAt: comment.CreatedAt,
+	}, nil
+}
+
+func (s *RequestService) GetPreviousRequests(ctx context.Context, orgID, callerUserID, role, reqID string) (*dto.PreviousRequestsResponse, error) {
+	req, err := s.reqRepo.GetByID(ctx, reqID)
+	if err != nil {
+		return nil, err
+	}
+	if req.OrgID != orgID {
+		return nil, repository.ErrRequestNotFound
+	}
+
+	if role != "org_admin" && role != "finance" {
+		if req.RequesterID != callerUserID {
+			return nil, ErrUnauthorizedRequest
+		}
+	}
+
+	filters := dto.ListFilters{
+		RequesterID: req.RequesterID,
+		Limit:       5,
+		Offset:      0,
+	}
+
+	requests, _, err := s.reqRepo.List(ctx, orgID, filters)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]dto.RequestListItem, 0)
+	for _, r := range requests {
+		if r.ID == reqID {
+			continue // skip current
+		}
+
+		daysPending := 0
+		if r.SubmittedAt != nil {
+			daysPending = int(time.Since(*r.SubmittedAt).Hours() / 24)
+		} else {
+			daysPending = int(time.Since(r.CreatedAt).Hours() / 24)
+		}
+
+		items = append(items, dto.RequestListItem{
+			ID:          r.ID,
+			Amount:      r.Amount,
+			Purpose:     r.Purpose,
+			Urgency:     r.Urgency,
+			Status:      r.Status,
+			DaysPending: daysPending,
+			CreatedAt:   r.CreatedAt,
+		})
+	}
+
+	return &dto.PreviousRequestsResponse{Data: items}, nil
+}
+
+func (s *RequestService) GetComments(ctx context.Context, orgID, callerUserID, role, reqID string) ([]dto.CommentResponse, error) {
+	req, err := s.reqRepo.GetByID(ctx, reqID)
+	if err != nil {
+		return nil, err
+	}
+	if req.OrgID != orgID {
+		return nil, repository.ErrRequestNotFound
+	}
+	if role != "org_admin" && role != "finance" {
+		if req.RequesterID != callerUserID {
+			return nil, ErrUnauthorizedRequest
+		}
+	}
+
+	comments, err := s.comRepo.GetByRequestID(ctx, reqID)
+	if err != nil {
+		return nil, err
+	}
+	commentDTOs := make([]dto.CommentResponse, len(comments))
+	for i, c := range comments {
+		commentDTOs[i] = dto.CommentResponse{
+			ID:        c.ID,
+			AuthorID:  c.AuthorID,
+			Author:    c.Author,
+			Content:   c.Content,
+			CreatedAt: c.CreatedAt,
+		}
+	}
+	return commentDTOs, nil
+}
+
+func (s *RequestService) GetReceipt(ctx context.Context, orgID, callerUserID, role, receiptID string) (*dto.ReceiptResponse, error) {
+	r, err := s.recRepo.GetReceiptByID(ctx, receiptID)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := s.reqRepo.GetByID(ctx, r.RequestID)
+	if err != nil {
+		return nil, err
+	}
+	if req.OrgID != orgID {
+		return nil, repository.ErrRequestNotFound
+	}
+
+	if role != "org_admin" && role != "finance" {
+		if req.RequesterID != callerUserID {
+			return nil, ErrUnauthorizedRequest
+		}
+	}
+
+	return &dto.ReceiptResponse{
+		ID:         r.ID,
+		FilePath:   r.FilePath,
+		OCRStatus:  r.OCRStatus,
+		OCRResults: r.OCRResults,
+		CreatedAt:  r.CreatedAt,
 	}, nil
 }

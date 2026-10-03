@@ -518,6 +518,13 @@ definitions:
       total:
         type: integer
     type: object
+  github_com_Firakef1_settle_backend_internal_requests_dto.PreviousRequestsResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.RequestListItem'
+        type: array
+    type: object
   github_com_Firakef1_settle_backend_internal_requests_dto.ReceiptResponse:
     properties:
       created_at:
@@ -995,6 +1002,47 @@ paths:
       summary: Verify email address
       tags:
       - auth
+  /receipts/{id}:
+    get:
+      description: Get a single receipt by ID
+      parameters:
+      - description: Receipt ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.ReceiptResponse'
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get receipt details
+      tags:
+      - requests
   /requests:
     get:
       description: List requests with filtering and pagination
@@ -1136,6 +1184,48 @@ paths:
       tags:
       - requests
   /requests/{id}/comments:
+    get:
+      description: Get all comments for a specific request
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              items:
+                $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.CommentResponse'
+              type: array
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get request comments
+      tags:
+      - requests
     post:
       consumes:
       - application/json
@@ -1188,6 +1278,47 @@ paths:
       security:
       - BearerAuth: []
       summary: Add comment
+      tags:
+      - requests
+  /requests/{id}/previous:
+    get:
+      description: Get the previous requests by the same requester
+      parameters:
+      - description: Request ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              $ref: '#/definitions/github_com_Firakef1_settle_backend_internal_requests_dto.PreviousRequestsResponse'
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get previous requests
       tags:
       - requests
   /requests/{id}/receipts:
