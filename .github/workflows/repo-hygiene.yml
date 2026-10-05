@@ -32,8 +32,9 @@ jobs:
         with:
           extra_args: --all-files --show-diff-on-failure
         env:
-          # commit-msg / pre-push stages are local-only; skip them in CI file scan
-          SKIP: conventional-commit-message,block-push-to-protected-branches
+          # commit-msg / pre-push stages and the branch guard are local-only; skip them in CI
+          # (no-commit-to-branch always fails on push-to-main runs, where CI is checked out on main)
+          SKIP: conventional-commit-message,block-push-to-protected-branches,no-commit-to-branch
 
   pr-conventions:
     name: PR conventions
