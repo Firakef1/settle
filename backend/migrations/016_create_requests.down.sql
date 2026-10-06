@@ -1,0 +1,5 @@
+-- +down
+DROP TABLE IF EXISTS timeline;
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS receipts;
+DROP TABLE IF EXISTS requests;
