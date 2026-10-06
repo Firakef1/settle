@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '../../../shared/stores/authStore';
 import Link from 'next/link';
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { verifyEmail, isLoading, error, clearError } = useAuthStore();
@@ -52,9 +52,8 @@ export default function VerifyEmailPage() {
     }
   };
 
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').replace(/[^0-9]/g, '').slice(0, 6);
+  const fillFromText = (text: string) => {
+    const pastedData = text.replace(/[^0-9]/g, '').slice(0, 6);
 
     if (pastedData) {
       const newOtp = [...otp];
@@ -65,6 +64,20 @@ export default function VerifyEmailPage() {
 
       const nextIndex = Math.min(pastedData.length, 5);
       inputRefs.current[nextIndex]?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    fillFromText(e.clipboardData.getData('text'));
+  };
+
+  // The Paste button has no clipboard event, so read the clipboard directly.
+  const handlePasteButton = async () => {
+    try {
+      fillFromText(await navigator.clipboard.readText());
+    } catch {
+      // Clipboard access denied; the user can still paste into a box.
     }
   };
 
@@ -92,7 +105,7 @@ export default function VerifyEmailPage() {
     try {
       await verifyEmail(email, code);
       router.push('/dashboard');
-    } catch (err) {
+    } catch {
       // Error handled by store
     }
   };
@@ -137,7 +150,7 @@ export default function VerifyEmailPage() {
           <div className="text-center w-full mb-6">
             <h1 className="font-[Plus_Jakarta_Sans] text-[28px] text-[#0e0e0e] mb-2 font-bold tracking-tight">Verify Your Email</h1>
             <p className="font-[Inter] text-[#525252] leading-relaxed mb-3">
-              We've sent a 6-digit verification code to
+              We&apos;ve sent a 6-digit verification code to
             </p>
             <div className="inline-flex items-center gap-1.5 px-3.5 py-1 bg-[#F0EFEA] border border-[#e5e7eb] rounded-full max-w-full">
               <span className="material-symbols-outlined text-[14px] text-[#525252]">mail</span>
@@ -159,6 +172,13 @@ export default function VerifyEmailPage() {
             </div>
           )}
 
+          {error && !showAlert && (
+            <p role="alert" className="text-[#BA1A1A] text-xs flex items-center gap-1">
+              <span className="material-symbols-outlined text-[14px]">error</span>
+              {error}
+            </p>
+          )}
+
           {/* OTP Form */}
           <form className="w-full mb-6" onSubmit={handleSubmit}>
             <div className="flex items-center justify-between mb-3">
@@ -167,7 +187,7 @@ export default function VerifyEmailPage() {
               </label>
               <button
                 type="button"
-                onClick={handlePaste}
+                onClick={handlePasteButton}
                 className="font-[Inter] text-[13px] text-[#0e0e0e] hover:text-[#526600] transition-colors flex items-center gap-1 font-semibold"
               >
                 <span className="material-symbols-outlined text-[15px]">content_paste</span>
@@ -179,7 +199,7 @@ export default function VerifyEmailPage() {
               {otp.map((digit, index) => (
                 <input
                   key={index}
-                  ref={el => inputRefs.current[index] = el}
+                  ref={el => { inputRefs.current[index] = el; }}
                   className="otp-cell w-[52px] h-[52px] mx-auto text-center font-[Plus_Jakarta_Sans] text-[22px] font-bold rounded-lg border border-[#e5e7eb] bg-[#F0EFEA] text-[#0e0e0e] focus:bg-white focus:border-[#0e0e0e] focus:ring-2 focus:ring-[#B5F546] transition-all outline-none"
                   data-index={index}
                   inputMode="numeric"
@@ -198,7 +218,7 @@ export default function VerifyEmailPage() {
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[17px] text-[#525252]">schedule</span>
                 <span className="font-[Inter] text-[13px] text-[#525252]">
-                  Didn't receive the code?
+                  Didn&apos;t receive the code?
                 </span>
               </div>
               <div>
@@ -316,5 +336,14 @@ export default function VerifyEmailPage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+// useSearchParams() needs a Suspense boundary so the page can be prerendered.
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={null}>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuthStore } from '../../../../shared/stores/authStore';
 import Link from 'next/link';
 
@@ -20,8 +20,7 @@ const passwordRequirements: PasswordRequirement[] = [
   { label: 'One special character', test: (p) => /[!@#$%^&*(),.?":{}|<>]/.test(p) },
 ];
 
-export default function ResetPasswordPage({ params }: { params: { token: string } }) {
-  const router = useRouter();
+function ResetPasswordContent({ params }: { params: { token: string } }) {
   const searchParams = useSearchParams();
   const { resetPassword, isLoading, error, clearError } = useAuthStore();
 
@@ -47,7 +46,7 @@ export default function ResetPasswordPage({ params }: { params: { token: string 
 
   // Password strength calculation
   const passwordStrength = useMemo(() => {
-    const { password } = formData;
+    const password = formData.password;
     if (!password) return { score: 0, label: '', color: '' };
 
     const passedRequirements = passwordRequirements.filter(req => req.test(password)).length;
@@ -60,7 +59,6 @@ export default function ResetPasswordPage({ params }: { params: { token: string 
 
   // Password match validation
   const passwordsMatch = formData.password && formData.confirmPassword && formData.password === formData.confirmPassword;
-  const showPasswordMismatch = formData.confirmPassword && !passwordsMatch;
 
   const validateForm = () => {
     const errors: {[key: string]: string} = {};
@@ -92,8 +90,9 @@ export default function ResetPasswordPage({ params }: { params: { token: string 
       // Use token as OTP - the API expects an otp parameter
       await resetPassword(email, token, formData.password);
       setPageState('success');
-    } catch (err: any) {
-      if (err.response?.status === 400 || err.response?.status === 404) {
+    } catch (err) {
+      const status = (err as { response?: { status?: number } }).response?.status;
+      if (status === 400 || status === 404) {
         setPageState('expired');
       }
     }
@@ -377,5 +376,14 @@ export default function ResetPasswordPage({ params }: { params: { token: string 
         </div>
       </footer>
     </div>
+  );
+}
+
+// useSearchParams() needs a Suspense boundary so the page can be prerendered.
+export default function ResetPasswordPage({ params }: { params: { token: string } }) {
+  return (
+    <Suspense fallback={null}>
+      <ResetPasswordContent params={params} />
+    </Suspense>
   );
 }

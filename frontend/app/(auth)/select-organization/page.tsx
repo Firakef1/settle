@@ -211,7 +211,7 @@ export default function SelectOrganizationPage() {
             <div className="w-full py-12 text-center bg-white border border-[#E5E4E0] rounded-2xl mb-6">
               <span className="material-symbols-outlined text-[40px] text-[#E5E4E0] block mb-3">search_off</span>
               <h3 className="text-[16px] font-bold text-[#1B1C1A] mb-1">No results found</h3>
-              <p className="text-[13px] text-[#575A5A] mb-4">No organization matches "{searchQuery}"</p>
+              <p className="text-[13px] text-[#575A5A] mb-4">No organization matches &ldquo;{searchQuery}&rdquo;</p>
               <button
                 className="px-4 py-2 bg-[#F6F6F4] border border-[#E5E4E0] text-[#1B1C1A] text-[13px] font-medium rounded-full hover:bg-[#EEEDEA] transition-colors"
                 onClick={() => setSearchQuery('')}

@@ -58,7 +58,7 @@ export default function LoginPage() {
       } else {
         router.push('/auth/setup-organization');
       }
-    } catch (err) {
+    } catch {
       // Error is handled by the store
     }
   };
@@ -351,7 +351,7 @@ export default function LoginPage() {
 
               {/* Sign Up Link */}
               <div className="mt-8 pt-4 text-center text-sm text-[#737775]">
-                Don't have an account?
+                Don&apos;t have an account?
                 <Link className="font-semibold text-[#0E0E0E] hover:underline underline-offset-4 ml-1" href="/signup">
                   Sign up
                 </Link>

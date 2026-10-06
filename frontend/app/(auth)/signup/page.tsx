@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '../../../shared/stores/authStore';
 import Link from 'next/link';
-import Image from 'next/image';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -85,7 +84,7 @@ export default function SignupPage() {
 
       // Redirect to email verification
       router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`);
-    } catch (err) {
+    } catch {
       // Error is handled by the store
     }
   };
@@ -98,7 +97,7 @@ export default function SignupPage() {
     clearError();
   };
 
-  const { checks, score } = getPasswordStrength(formData.password);
+  const { checks } = getPasswordStrength(formData.password);
 
   return (
     <div className="bg-[#faf9f6] text-[#121514] font-[Inter] antialiased min-h-screen flex flex-col justify-between selection:bg-[#caf23c] selection:text-[#0e0e0e]">
@@ -185,7 +184,7 @@ export default function SignupPage() {
                     ))}
                   </div>
                   <blockquote className="font-[Inter] text-sm text-neutral-300 italic leading-relaxed">
-                    "Settle unified our cross-border liquidity and multi-subsidiary auditing in under two weeks. Month-end close went from 9 days down to 4 hours."
+                    &ldquo;Settle unified our cross-border liquidity and multi-subsidiary auditing in under two weeks. Month-end close went from 9 days down to 4 hours.&rdquo;
                   </blockquote>
                   <div className="flex items-center justify-between pt-2 border-t border-neutral-800/80 mt-1">
                     <div className="flex items-center gap-3">
@@ -419,7 +418,7 @@ export default function SignupPage() {
                         onChange={(e) => setAcceptedTerms(e.target.checked)}
                       />
                       <span className="font-[Inter] text-xs text-[#5f6368] leading-relaxed">
-                        I agree to Settle's{' '}
+                        I agree to Settle&apos;s{' '}
                         <Link className="font-medium text-[#0e0e0e] hover:underline underline-offset-2" href="#">
                           Terms of Service
                         </Link>

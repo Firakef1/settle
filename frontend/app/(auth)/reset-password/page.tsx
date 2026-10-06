@@ -1,17 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { useAuthStore } from '../../../shared/stores/authStore';
 import Link from 'next/link';
 
 export default function ResetPasswordPage() {
-  const router = useRouter();
   const { resetPassword, isLoading, error, clearError } = useAuthStore();
 
   const [view, setView] = useState<'form' | 'success' | 'expired'>('form');
-  const [tokenValid, setTokenValid] = useState(true);
-  const [email, setEmail] = useState('elena.armas@meridianfin.com');
+  const [email] = useState('elena.armas@meridianfin.com');
 
   const [formData, setFormData] = useState({
     newPassword: '',
@@ -64,19 +61,11 @@ export default function ResetPasswordPage() {
     try {
       await resetPassword(email, 'tk_sec_9938a9e', formData.newPassword);
       setView('success');
-    } catch (err) {
+    } catch {
       // Error handled by store
     }
   };
 
-  // Reset token when component mounts (simulated)
-  useEffect(() => {
-    const checkToken = async () => {
-      // In real app, verify token with API
-      setTokenValid(true);
-    };
-    checkToken();
-  }, []);
 
   const { checks, score } = getPasswordStrength(formData.newPassword);
 
@@ -279,6 +268,13 @@ export default function ResetPasswordPage() {
                   </ul>
                 </div>
 
+                {validationError || error && (
+                  <p role="alert" className="text-[#BA1A1A] text-xs flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[14px]">error</span>
+                    {validationError || error}
+                  </p>
+                )}
+
                 {/* Submit Button */}
                 <button
                   className="w-full h-12 mt-1 rounded-full bg-[#0E0E0E] text-white text-sm font-semibold flex items-center justify-center gap-2 hover:bg-[#222222] transition-all duration-200 shadow-md active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none"
@@ -379,7 +375,7 @@ export default function ResetPasswordPage() {
               <div className="w-full bg-[#F6F6F4] border border-[#E5E4E0] p-3.5 rounded-xl flex items-start gap-3 text-left">
                 <span className="material-symbols-outlined text-[#0E0E0E] text-[18px] mt-0.5">info</span>
                 <p className="font-[Inter] text-xs text-[#525252] leading-relaxed">
-                  If you did not request this reset or believe this is an error, please reach out directly to your organization's Settle administrator.
+                  If you did not request this reset or believe this is an error, please reach out directly to your organization&apos;s Settle administrator.
                 </p>
               </div>
 

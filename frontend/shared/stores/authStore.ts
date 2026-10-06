@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { authAPI, LoginResponse } from '../services/authAPI';
+import { authAPI } from '../services/authAPI';
 
 interface User {
   id: string;
@@ -41,6 +41,12 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
 }
 
+// The backend returns errors as { error, code? }; older handlers may use { message }.
+function apiErrorMessage(error: unknown, fallback: string): string {
+  const data = (error as { response?: { data?: { error?: string; message?: string } } })?.response?.data;
+  return data?.error || data?.message || fallback;
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -71,10 +77,10 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             error: null,
           });
-        } catch (error: any) {
+        } catch (error) {
           set({
             isLoading: false,
-            error: error.response?.data?.message || 'Login failed. Please try again.',
+            error: apiErrorMessage(error, 'Login failed. Please try again.'),
           });
           throw error;
         }
@@ -86,10 +92,10 @@ export const useAuthStore = create<AuthState>()(
         try {
           await authAPI.signup({ name, email, password });
           set({ isLoading: false, error: null });
-        } catch (error: any) {
+        } catch (error) {
           set({
             isLoading: false,
-            error: error.response?.data?.message || 'Signup failed. Please try again.',
+            error: apiErrorMessage(error, 'Signup failed. Please try again.'),
           });
           throw error;
         }
@@ -114,10 +120,10 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             error: null,
           });
-        } catch (error: any) {
+        } catch (error) {
           set({
             isLoading: false,
-            error: error.response?.data?.message || 'Verification failed. Please try again.',
+            error: apiErrorMessage(error, 'Verification failed. Please try again.'),
           });
           throw error;
         }
@@ -129,10 +135,10 @@ export const useAuthStore = create<AuthState>()(
         try {
           await authAPI.forgotPassword({ email });
           set({ isLoading: false, error: null });
-        } catch (error: any) {
+        } catch (error) {
           set({
             isLoading: false,
-            error: error.response?.data?.message || 'Failed to send reset email.',
+            error: apiErrorMessage(error, 'Failed to send reset email.'),
           });
           throw error;
         }
@@ -144,10 +150,10 @@ export const useAuthStore = create<AuthState>()(
         try {
           await authAPI.resetPassword({ email, otp, new_password });
           set({ isLoading: false, error: null });
-        } catch (error: any) {
+        } catch (error) {
           set({
             isLoading: false,
-            error: error.response?.data?.message || 'Password reset failed.',
+            error: apiErrorMessage(error, 'Password reset failed.'),
           });
           throw error;
         }
@@ -200,7 +206,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: true,
             error: null,
           });
-        } catch (error: any) {
+        } catch (error) {
           // Refresh failed, clear auth state
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
