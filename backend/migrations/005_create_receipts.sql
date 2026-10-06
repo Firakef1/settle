@@ -1,1 +1,0 @@
--- TODO: receipts table — see docs/PRD.md Data Model

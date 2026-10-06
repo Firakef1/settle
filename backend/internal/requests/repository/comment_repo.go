@@ -54,6 +54,7 @@ func (r *CommentRepo) GetByRequestID(ctx context.Context, requestID string) ([]m
 		query := `
 			SELECT c.id, c.request_id, c.author_id, c.content, c.created_at, c.updated_at,
 			       u.full_name as author, om.role
+			       u.name as author, om.role
 			FROM comments c
 			JOIN users u ON c.author_id = u.id
 			JOIN requests req ON req.id = c.request_id
