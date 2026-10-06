@@ -55,12 +55,12 @@ type TimelineEvent struct {
 }
 
 type RequestResponse struct {
-	ID        string  `json:"id"`
-	Type      string  `json:"type"`
-	Amount    float64 `json:"amount"`
-	Purpose   string  `json:"purpose"`
-	Urgency   string  `json:"urgency"`
-	Status    string  `json:"status"`
+	ID      string  `json:"id"`
+	Type    string  `json:"type"`
+	Amount  float64 `json:"amount"`
+	Purpose string  `json:"purpose"`
+	Urgency string  `json:"urgency"`
+	Status  string  `json:"status"`
 
 	Requester RequesterResponse `json:"requester"`
 
