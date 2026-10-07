@@ -968,9 +968,9 @@ Query:
 }
 ```
 
-Actions that are written today: organization create and update, `invite_created`, `invite_accepted`, `member_removed`, `role_updated`, plan change, `approved`, `rejected`, `paid`, `failed`.
+Actions written today: organization create and update, `invite_created`, `invite_accepted`, `member_removed`, `role_updated`, plan change, `approved`, `rejected`, `paid`, `failed`, `request_created`, `request_withdrawn`, `request_resubmitted`, `receipt_uploaded`, and `comment_added`.
 
-Creating, submitting, withdrawing, resubmitting, and commenting on a request do not write a row.
+Request activity stores the subject in `metadata.target_type` (`request`, `receipt`, or `comment`). `target_id` is that row's id. Submitting a draft does not add its own audit row.
 
 ---
 

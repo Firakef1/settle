@@ -4,15 +4,15 @@ import "time"
 
 // User represents the user domain model.
 type User struct {
-	ID            string    `json:"id"`
-	Email         string    `json:"email"`
-	Name          string    `json:"name"`
-	PasswordHash  string    `json:"-"`
-	Status        string    `json:"status"`
-	EmailVerified bool      `json:"email_verified"`
+	ID            string     `json:"id"`
+	Email         string     `json:"email"`
+	Name          string     `json:"name"`
+	PasswordHash  string     `json:"-"`
+	Status        string     `json:"status"`
+	EmailVerified bool       `json:"email_verified"`
 	DeletedAt     *time.Time `json:"deleted_at,omitempty"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	CreatedAt     time.Time  `json:"created_at"`
+	UpdatedAt     time.Time  `json:"updated_at"`
 }
 
 // OrgMembership represents a user's membership in an organization.

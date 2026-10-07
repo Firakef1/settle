@@ -20,9 +20,9 @@ type OCRResponse struct {
 		ParsedText   string `json:"ParsedText"`
 		ErrorMessage string `json:"ErrorMessage"`
 	} `json:"ParsedResults"`
-	OCRExitCode             int    `json:"OCRExitCode"`
-	IsErroredOnProcessing   bool   `json:"IsErroredOnProcessing"`
-	ErrorMessage            string `json:"ErrorMessage"`
+	OCRExitCode           int    `json:"OCRExitCode"`
+	IsErroredOnProcessing bool   `json:"IsErroredOnProcessing"`
+	ErrorMessage          string `json:"ErrorMessage"`
 }
 
 type ExtractedData struct {
