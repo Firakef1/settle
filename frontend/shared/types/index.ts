@@ -112,6 +112,7 @@ export interface Comment {
   // The API currently sends `author` as an empty string; match on author_id.
   author?: string;
   author_name?: string;
+  role?: string;
   author_role?: string;
   content: string;
   text?: string; // alias for content in some responses
