@@ -109,7 +109,9 @@ export interface Receipt {
 export interface Comment {
   id: string;
   author_id: string;
-  author_name: string;
+  // The API currently sends `author` as an empty string; match on author_id.
+  author?: string;
+  author_name?: string;
   author_role?: string;
   content: string;
   text?: string; // alias for content in some responses

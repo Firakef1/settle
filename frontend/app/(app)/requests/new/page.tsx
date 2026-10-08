@@ -1,4 +1,5 @@
-// TODO: Create request (Dev 1) — see docs/PRD.md
+import { NewRequestForm } from '../../../../features/requests/components/NewRequestForm';
+
 export default function NewRequestPage() {
-  return <main>Submit Request (scaffold)</main>;
+  return <NewRequestForm />;
 }
