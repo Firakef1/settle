@@ -53,7 +53,6 @@ func (r *CommentRepo) GetByRequestID(ctx context.Context, requestID string) ([]m
 	if r.db != nil {
 		query := `
 			SELECT c.id, c.request_id, c.author_id, c.content, c.created_at, c.updated_at,
-			       u.full_name as author, om.role
 			       u.name as author, om.role
 			FROM comments c
 			JOIN users u ON c.author_id = u.id
@@ -74,12 +73,8 @@ func (r *CommentRepo) GetByRequestID(ctx context.Context, requestID string) ([]m
 			if err := rows.Scan(&c.ID, &c.RequestID, &c.AuthorID, &c.Content, &c.CreatedAt, &c.UpdatedAt, &author, &role); err != nil {
 				return nil, err
 			}
-			c.AuthorID = c.AuthorID
 			c.Author = author
 			c.Role = role
-			c.Content = c.Content
-			c.CreatedAt = c.CreatedAt
-			c.UpdatedAt = c.UpdatedAt
 			comments = append(comments, c)
 		}
 		if err := rows.Err(); err != nil {
