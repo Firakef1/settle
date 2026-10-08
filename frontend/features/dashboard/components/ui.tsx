@@ -1,24 +1,11 @@
 import type { ReactNode } from 'react';
 import { Button } from '../../../shared/components/Button';
+import { Icon } from '../../../shared/components/Icon';
+import { apiErrorMessage } from '../../../shared/utils/apiError';
+import { fontHeading } from '../../../shared/utils/fonts';
 
-// Font families come from next/font variables set in app/layout.tsx.
-export const fontHeading = 'font-[family-name:var(--font-plus-jakarta-sans)]';
-export const fontBody = 'font-[family-name:var(--font-inter)]';
-
-// Material Symbols Outlined is loaded in app/layout.tsx; the Figma icons are these glyphs.
-// Size is set inline because Google's stylesheet fixes font-size at 24px and,
-// being unlayered, beats Tailwind's text-[..] utilities.
-export function Icon({ name, size = 20, className = '' }: { name: string; size?: number; className?: string }) {
-  return (
-    <span
-      aria-hidden
-      className={`material-symbols-outlined shrink-0 select-none leading-none ${className}`}
-      style={{ fontSize: size, width: size, height: size }}
-    >
-      {name}
-    </span>
-  );
-}
+export { Icon } from '../../../shared/components/Icon';
+export { fontBody, fontHeading } from '../../../shared/utils/fonts';
 
 export function Dot({ className }: { className: string }) {
   return <span aria-hidden className={`inline-block size-2 shrink-0 rounded-full ${className}`} />;
@@ -116,8 +103,7 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry: () 
 }
 
 export function errorMessage(error: unknown): string {
-  const data = (error as { response?: { data?: { error?: string; message?: string } } })?.response?.data;
-  return data?.error ?? data?.message ?? 'Check your connection and try again.';
+  return apiErrorMessage(error, 'Check your connection and try again.');
 }
 
 export function updatedAgo(timestamp: number, now = Date.now()): string {
