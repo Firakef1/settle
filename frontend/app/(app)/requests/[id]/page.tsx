@@ -1,4 +1,9 @@
-// TODO: Request detail (Dev 1) — see docs/PRD.md
+'use client';
+
+import { useParams } from 'next/navigation';
+import { RequestDetail } from '../../../../features/requests/components/RequestDetail';
+
 export default function RequestDetailPage() {
-  return <main>Request Detail (scaffold)</main>;
+  const { id } = useParams<{ id: string }>();
+  return <RequestDetail id={decodeURIComponent(id)} />;
 }
