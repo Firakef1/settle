@@ -443,7 +443,7 @@ function RecentRequests({
     return true;
   });
   const rows = filtered.slice(0, RECENT_ROWS);
-  const th = 'px-3 py-3 text-[11px] font-semibold leading-4 tracking-[0.55px] text-[#444748]';
+  const th = 'px-2.5 py-3 text-[11px] font-semibold leading-4 tracking-[0.55px] text-[#444748]';
 
   return (
     <section aria-labelledby="recent-heading" className={`flex flex-col overflow-hidden rounded-2xl bg-white ${cardShadow}`}>
@@ -509,17 +509,17 @@ function RecentRequests({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[880px] border-collapse text-left">
+          <table className="w-full min-w-[820px] border-collapse text-left">
             <thead className="bg-[rgba(244,243,240,0.7)]">
               <tr>
-                <th scope="col" className={`${th} pl-6`}>Request</th>
+                <th scope="col" className={`${th} pl-5`}>Request</th>
                 <th scope="col" className={th}>Date</th>
                 <th scope="col" className={th}>Purpose</th>
                 <th scope="col" className={`${th} text-right`}>Amount</th>
                 <th scope="col" className={`${th} text-center`}>Urgency</th>
                 <th scope="col" className={th}>Status</th>
                 <th scope="col" className={th}>Aging &amp; Notes</th>
-                <th scope="col" className={`${th} pr-6 text-right`}>Action</th>
+                <th scope="col" className={`${th} pr-5 text-right`}>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -529,39 +529,39 @@ function RecentRequests({
                 const status = STATUS_STYLE[item.status];
                 return (
                   <tr key={item.id} className={`border-t border-[#efeeeb] ${flagged ? 'bg-[rgba(255,218,214,0.05)]' : ''}`}>
-                    <td className="py-4 pl-6 pr-3">
+                    <td className="py-4 pl-5 pr-2.5">
                       <span className={`flex items-center gap-2 whitespace-nowrap text-[13px] font-semibold leading-[18px] ${flagged ? 'text-[#ba1a1a]' : 'text-[#1b1c1a]'}`}>
                         <Icon name={flagged ? 'priority_high' : 'receipt_long'} size={15} />
                         {item.id}
                       </span>
                     </td>
-                    <td className="whitespace-nowrap px-3 py-4 text-[13px] font-medium leading-[18px] text-[#444748]">
+                    <td className="whitespace-nowrap px-2.5 py-4 text-[13px] font-medium leading-[18px] text-[#444748]">
                       {formatDateOnly(item.created_at)}
                     </td>
-                    <td className="w-[190px] min-w-[150px] max-w-[190px] px-3 py-4">
+                    <td className="w-[160px] min-w-[130px] max-w-[160px] px-2.5 py-4">
                       <p className={`line-clamp-2 text-[13px] leading-[18px] tracking-[-0.07px] ${flagged ? 'font-medium text-[#ba1a1a]' : 'text-[#1b1c1a]'}`} title={item.purpose}>
                         {item.purpose}
                       </p>
                     </td>
-                    <td className="whitespace-nowrap px-3 py-4 text-right text-[13px] font-semibold leading-[18px] text-[#1b1c1a]">
+                    <td className="whitespace-nowrap px-2.5 py-4 text-right text-[13px] font-semibold leading-[18px] text-[#1b1c1a]">
                       {formatMoney(item.amount, currency)}
                     </td>
-                    <td className="px-3 py-4 text-center">
+                    <td className="px-2.5 py-4 text-center">
                       <Pill className={`py-1 tracking-[-0.07px] ${urgency.pill}`}>
                         {urgency.dot && <span aria-hidden className={`size-1.5 rounded-full ${urgency.dot}`} />}
                         {URGENCIES[item.urgency]}
                       </Pill>
                     </td>
-                    <td className="px-3 py-4">
+                    <td className="px-2.5 py-4">
                       <Pill className={`py-1 tracking-[-0.07px] ${status.pill}`}>
                         <Icon name={status.icon} size={13} />
                         {status.label}
                       </Pill>
                     </td>
-                    <td className="px-3 py-4">
+                    <td className="px-2.5 py-4">
                       <AgingNote item={item} />
                     </td>
-                    <td className="py-4 pl-3 pr-6 text-right">
+                    <td className="py-4 pl-2.5 pr-5 text-right">
                       <RowAction item={item} />
                     </td>
                   </tr>
