@@ -99,7 +99,9 @@ export interface Receipt {
   file_name?: string;
   file_size?: number;
   file_type?: string;
-  ocr_status: 'pending' | 'processing' | 'success' | 'failed';
+  ocr_status: 'pending' | 'processing' | 'completed' | 'success' | 'failed';
+  // JSON string from the OCR job: { merchant, date, amount } or { error }.
+  ocr_results?: string;
   extracted_amount?: number;
   extracted_merchant?: string;
   extracted_date?: string;
