@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '../../../shared/stores/authStore';
 import Link from 'next/link';
 import { getApiError } from '../../../shared/utils/apiError';
+import { authAPI } from '../../../shared/services/authAPI';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,6 +17,15 @@ export default function LoginPage() {
   });
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [invited, setInvited] = useState(false);
+
+  // Arriving from an accepted invite: /login?invited=1&email=…
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('invited') === '1') setInvited(true);
+    const email = params.get('email');
+    if (email) setFormData((prev) => ({ ...prev, email }));
+  }, []);
   const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
 
   const validateForm = () => {
@@ -59,6 +69,8 @@ export default function LoginPage() {
       // 403 + email_not_verified: the password was right but the email isn't verified yet.
       if (getApiError(err).code === 'email_not_verified') {
         clearError();
+        // Accounts created from an invite were never sent a code, so send one now.
+        await authAPI.resendVerification(formData.email).catch(() => undefined);
         router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
       }
       // Other errors are shown from the store.
@@ -198,6 +210,13 @@ export default function LoginPage() {
                     Sign in to manage your institutional accounts
                   </p>
                 </div>
+
+                {invited && !error && (
+                  <div className="mb-6 flex items-center gap-2.5 rounded-xl bg-[#EEF9D6] p-4 text-[#2F3D00]">
+                    <span className="material-symbols-outlined text-[20px] text-[#526600]">check_circle</span>
+                    <span className="text-sm font-medium">You&apos;ve joined the organization. Sign in to continue.</span>
+                  </div>
+                )}
 
                 {/* Error Banner */}
                 {error && (

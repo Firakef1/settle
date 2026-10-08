@@ -1,4 +1,9 @@
-// TODO: Accept invite page (Dev 1) — see docs/PRD.md
+'use client';
+
+import { useParams } from 'next/navigation';
+import { AcceptInvite } from '../../../../features/admin/components/AcceptInvite';
+
 export default function InviteAcceptPage() {
-  return <main>Accept invite (scaffold)</main>;
+  const { token } = useParams<{ token: string }>();
+  return <AcceptInvite token={token} />;
 }

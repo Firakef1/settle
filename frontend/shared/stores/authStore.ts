@@ -105,6 +105,11 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             error: null,
           });
+          // verify-email omits `orgs`. Someone who joined through an invite already
+          // has one, so refresh once to load it (refresh returns the memberships).
+          if (!response.orgs) {
+            await get().refreshToken().catch(() => undefined);
+          }
         } catch (error: unknown) {
           set({
             isLoading: false,
