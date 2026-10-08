@@ -62,6 +62,6 @@ export const OAUTH_ERRORS: Record<string, string> = {
   unavailable: "That sign-in option isn't available right now.",
   no_email: "Your account didn't share an email address, so we couldn't sign you in.",
   account_exists:
-    'An account with this email already exists. Sign in with your password once; the provider can only be used for accounts it verifies.',
+    "An account with this email already exists, and this provider couldn't confirm you own the address. Sign in with your email and password instead.",
   failed: "We couldn't complete sign-in with that provider. Please try again.",
 };
