@@ -295,6 +295,45 @@ Token required.
 | 401 | No token |
 | 403 | Password does not match |
 
+### Sign in with Google / Microsoft
+
+Browser redirects, not JSON calls. A provider works only when its client ID and secret are set on the server.
+
+`GET /api/v1/auth/oauth/providers` → `200`
+
+```json
+{ "data": ["google", "microsoft"] }
+```
+
+Empty when nothing is configured. Show a button only for the providers listed.
+
+`GET /api/v1/auth/oauth/:provider/start?next=/requests` → `302` to the provider
+
+Navigate the browser here (a link, not `fetch`). `next` is an optional path to open afterwards. Sets a short-lived HttpOnly cookie.
+
+`GET /api/v1/auth/oauth/:provider/callback` → `302`
+
+The provider sends the browser here. On success it redirects to:
+
+```text
+<FRONTEND_URL>/oauth/callback#token=<access>&refresh_token=<refresh>&next=/requests
+```
+
+The tokens are in the fragment. Save them, then call `POST /auth/refresh` to load `user` and `orgs`.
+
+On failure it redirects to `<FRONTEND_URL>/login?oauth_error=<code>`:
+
+| Code | When |
+|---|---|
+| `cancelled` | The user declined at the provider |
+| `state` | The sign-in link expired, was reused, or was tampered with |
+| `unavailable` | Unknown or unconfigured provider |
+| `no_email` | The provider didn't share an email address |
+| `account_exists` | An account already uses that email and the provider didn't verify it (Microsoft never marks emails verified) |
+| `failed` | Anything else (bad code, provider down) |
+
+Accounts: a provider account is linked to one user. A new email creates a verified user with no usable password (use forgot password to set one). An existing email is linked only when the provider verified it.
+
 ---
 
 ## 2. Organization, people, plan

@@ -6,6 +6,7 @@ import { useAuthStore } from '../../../shared/stores/authStore';
 import Link from 'next/link';
 import { getApiError } from '../../../shared/utils/apiError';
 import { authAPI } from '../../../shared/services/authAPI';
+import { OAUTH_ERRORS, OAuthButtons } from '../../../features/auth/components/OAuthButtons';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,11 +19,17 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [invited, setInvited] = useState(false);
+  const [oauthError, setOauthError] = useState('');
+  const [nextPath, setNextPath] = useState<string | undefined>();
 
   // Arriving from an accepted invite: /login?invited=1&email=…
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('invited') === '1') setInvited(true);
+    const oauth = params.get('oauth_error');
+    if (oauth) setOauthError(OAUTH_ERRORS[oauth] ?? OAUTH_ERRORS.failed);
+    const next = params.get('next');
+    if (next && next.startsWith('/') && !next.startsWith('//')) setNextPath(next);
     const email = params.get('email');
     if (email) setFormData((prev) => ({ ...prev, email }));
   }, []);
@@ -211,6 +218,13 @@ export default function LoginPage() {
                   </p>
                 </div>
 
+                {oauthError && !error && (
+                  <div role="alert" className="mb-6 flex items-start gap-2.5 rounded-xl bg-[#FFDAD6] p-4 text-[#93000A]">
+                    <span className="material-symbols-outlined text-[20px] text-[#BA1A1A]">error</span>
+                    <span className="text-sm font-medium">{oauthError}</span>
+                  </div>
+                )}
+
                 {invited && !error && (
                   <div className="mb-6 flex items-center gap-2.5 rounded-xl bg-[#EEF9D6] p-4 text-[#2F3D00]">
                     <span className="material-symbols-outlined text-[20px] text-[#526600]">check_circle</span>
@@ -344,30 +358,7 @@ export default function LoginPage() {
                   </div>
                 </form>
 
-                {/* SSO Options */}
-                <div className="mt-6 pt-5 border-t border-[#E5E7EB]">
-                  <div className="relative flex items-center justify-center -top-8">
-                    <span className="px-3 bg-white text-xs font-semibold text-[#737775] uppercase tracking-wider">
-                      Enterprise Single Sign-On
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 -mt-2">
-                    <button
-                      className="h-10 px-3 rounded-full bg-[#F4F4F1] hover:bg-[#E8E7E2] border border-[#E5E7EB] text-[#111413] text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-sm"
-                      type="button"
-                    >
-                      <span className="material-symbols-outlined text-[17px] text-[#0E0E0E]">domain</span>
-                      <span>Sign in with Google</span>
-                    </button>
-                    <button
-                      className="h-10 px-3 rounded-full bg-[#F4F4F1] hover:bg-[#E8E7E2] border border-[#E5E7EB] text-[#111413] text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-sm"
-                      type="button"
-                    >
-                      <span className="material-symbols-outlined text-[17px] text-[#0E0E0E]">shield</span>
-                      <span>Sign in with Microsoft</span>
-                    </button>
-                  </div>
-                </div>
+                <OAuthButtons next={nextPath} />
               </div>
 
               {/* Sign Up Link */}

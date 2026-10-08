@@ -15,6 +15,7 @@ import (
 type Handlers struct {
 	Auth         *authHandler.AuthHandler
 	Verification *authHandler.VerificationHandler
+	OAuth        *authHandler.OAuthHandler
 	Org          *orghandler.OrgHandler
 	Member       *orghandler.MemberHandler
 	Invitation   *orghandler.InvitationHandler
@@ -39,7 +40,7 @@ func SetupRouter(h *Handlers) *gin.Engine {
 	// API v1 group - all domain routes mounted under /api/v1
 	apiV1 := route.Group("/api/v1")
 	{
-		RegisterAuthRoutes(apiV1, h.Auth, h.Verification)
+		RegisterAuthRoutes(apiV1, h.Auth, h.Verification, h.OAuth)
 		RegisterOrganizationRoutes(apiV1, h.Org, h.Member, h.Invitation, h.Audit, h.Dashboard, h.Billing)
 		RegisterApprovalRoutes(apiV1, h.Approval)
 		RegisterRequestRoutes(apiV1, h.Request)
@@ -48,7 +49,7 @@ func SetupRouter(h *Handlers) *gin.Engine {
 	// v1 group - backwards compatibility
 	v1 := route.Group("/v1")
 	{
-		RegisterAuthRoutes(v1, h.Auth, h.Verification)
+		RegisterAuthRoutes(v1, h.Auth, h.Verification, h.OAuth)
 		RegisterOrganizationRoutes(v1, h.Org, h.Member, h.Invitation, h.Audit, h.Dashboard, h.Billing)
 		RegisterApprovalRoutes(v1, h.Approval)
 		RegisterRequestRoutes(v1, h.Request)

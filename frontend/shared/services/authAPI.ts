@@ -95,6 +95,19 @@ export const authAPI = {
   },
 
   // Logout
+  // Sign-in providers that have credentials configured on the server, e.g. ["google"].
+  async oauthProviders(): Promise<string[]> {
+    const response = await api.get<{ data: string[] }>('/auth/oauth/providers');
+    return response.data.data ?? [];
+  },
+
+  // Full-page navigation target that starts "Sign in with <provider>".
+  oauthStartUrl(provider: string, next?: string): string {
+    const base = (api.defaults.baseURL ?? '/api/v1').replace(/\/$/, '');
+    const query = next ? `?next=${encodeURIComponent(next)}` : '';
+    return `${base}/auth/oauth/${provider}/start${query}`;
+  },
+
   // DELETE /auth/me. 403 when the password doesn't match.
   async deleteAccount(currentPassword: string): Promise<{ message: string }> {
     const response = await api.delete('/auth/me', { data: { current_password: currentPassword } });
