@@ -95,6 +95,12 @@ export const authAPI = {
   },
 
   // Logout
+  // DELETE /auth/me. 403 when the password doesn't match.
+  async deleteAccount(currentPassword: string): Promise<{ message: string }> {
+    const response = await api.delete('/auth/me', { data: { current_password: currentPassword } });
+    return response.data;
+  },
+
   async logout(refreshToken: string): Promise<{ message: string }> {
     const response = await api.post('/auth/logout', { refresh_token: refreshToken });
     return response.data;
