@@ -53,7 +53,7 @@ const NAV: NavItem[] = [
     label: 'Settings',
     icon: 'settings',
     roles: ALL,
-    isActive: (p) => p === '/settings' || p.startsWith('/settings/billing'),
+    isActive: (p) => p === '/settings' || p.startsWith('/settings/billing') || p.startsWith('/settings/account'),
   },
 ];
 

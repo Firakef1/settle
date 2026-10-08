@@ -53,7 +53,6 @@ export function MembersPage() {
     <div className="flex flex-col gap-6">
       <section className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <p className="text-[12px] font-medium text-[#747878]">Settings / Members</p>
           <h1 className={`${fontHeading} text-[28px] font-bold leading-9 tracking-[-0.7px]`}>Members & Access</h1>
           <p className="text-[14px] text-[#444748]">
             {isAdmin ? 'Invite people, change roles, and remove access.' : 'Everyone in the organization. Only admins can make changes.'}

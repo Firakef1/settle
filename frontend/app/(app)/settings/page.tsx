@@ -1,4 +1,6 @@
-// TODO: Org settings (Dev 2) — see docs/PRD.md
+import { OrgSettings } from '../../../features/admin/components/OrgSettings';
+
+// Everyone can see the organization; only org_admin can edit it.
 export default function SettingsPage() {
-  return <main>Settings (scaffold)</main>;
+  return <OrgSettings />;
 }
