@@ -1,40 +1,61 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useAuthStore } from '@/shared/stores/authStore';
+import { useAuthHydrated } from '@/shared/hooks/useAuthHydrated';
+import { ROLES } from '@/shared/utils/constants';
+import type { Role } from '@/shared/types';
 
+function FullPageMessage({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#FAF9F6] text-[13px] text-[#444748]">
+      <span className="material-symbols-outlined mr-2 animate-spin text-[18px] text-[#B5F546]">progress_activity</span>
+      {children}
+    </div>
+  );
+}
+
+// Protects every (app) route: no session → /login, session without an
+// organization → /select-organization (where they can create one).
 export function RouteGuard({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuthStore();
+  const hydrated = useAuthHydrated();
+  const { isAuthenticated, currentOrg } = useAuthStore();
   const router = useRouter();
+  const pathname = usePathname();
+
+  const hasToken = typeof window !== 'undefined' && !!localStorage.getItem('accessToken');
+  const signedIn = isAuthenticated && hasToken;
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.replace('/login');
+    if (!hydrated) return;
+    if (!signedIn) {
+      router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+    } else if (!currentOrg) {
+      router.replace('/select-organization');
     }
-  }, [isAuthenticated, router]);
+  }, [hydrated, signedIn, currentOrg, router, pathname]);
 
-  if (!isAuthenticated) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-[#FAF9F6] text-[#444748]">
-        Redirecting to login...
-      </div>
-    );
-  }
-
+  if (!hydrated) return <FullPageMessage>Loading…</FullPageMessage>;
+  if (!signedIn) return <FullPageMessage>Redirecting to login…</FullPageMessage>;
+  if (!currentOrg) return <FullPageMessage>Choose an organization…</FullPageMessage>;
   return <>{children}</>;
 }
 
-export function RoleGuard({ allowedRoles, children }: { allowedRoles: string[]; children: React.ReactNode }) {
+// Shows a 403 state instead of rendering a page the role can't use.
+export function RoleGuard({ allowedRoles, children }: { allowedRoles: Role[]; children: React.ReactNode }) {
   const { currentOrg } = useAuthStore();
-  const role = currentOrg?.role || 'staff';
+  const role = (currentOrg?.role ?? 'staff') as Role;
 
   if (!allowedRoles.includes(role)) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-center">
         <span className="material-symbols-outlined text-4xl text-[#C4C7C7]">lock_person</span>
-        <h2 className="text-xl font-bold text-[#1B1C1A]">Access Denied</h2>
-        <p className="text-[#444748]">Your role ({role}) does not have access to this page.</p>
+        <h2 className="text-xl font-bold text-[#1B1C1A]">Access denied</h2>
+        <p className="max-w-sm text-[14px] text-[#444748]">
+          This page is for {allowedRoles.map((r) => ROLES[r]).join(' or ')} roles. You&apos;re signed in as{' '}
+          {ROLES[role] ?? role}.
+        </p>
       </div>
     );
   }

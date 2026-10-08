@@ -4,14 +4,15 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '../../../shared/stores/authStore';
 import Link from 'next/link';
+import { getApiError } from '../../../shared/utils/apiError';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login, isLoading, error, clearError } = useAuthStore();
 
   const [formData, setFormData] = useState({
-    email: 'controller@enterprise.com',
-    password: 'SecuredPassKey2025',
+    email: '',
+    password: '',
   });
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
@@ -46,20 +47,21 @@ export default function LoginPage() {
     try {
       await login(formData.email, formData.password);
 
-      // Check if user needs to verify email or select organization
-      const { user, orgs } = useAuthStore.getState();
-
-      if (user && !user.email_verified) {
-        router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`);
-      } else if (orgs.length > 1) {
-        router.push('/auth/select-organization');
-      } else if (orgs.length === 1) {
-        router.push('/dashboard');
+      // The token carries the first org; with none, send them to create or join one.
+      const { orgs } = useAuthStore.getState();
+      const next = new URLSearchParams(window.location.search).get('next');
+      if (orgs.length === 0) {
+        router.push('/select-organization');
       } else {
-        router.push('/auth/setup-organization');
+        router.push(next && next.startsWith('/') ? next : '/dashboard');
       }
-    } catch {
-      // Error is handled by the store
+    } catch (err) {
+      // 403 + email_not_verified: the password was right but the email isn't verified yet.
+      if (getApiError(err).code === 'email_not_verified') {
+        clearError();
+        router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
+      }
+      // Other errors are shown from the store.
     }
   };
 

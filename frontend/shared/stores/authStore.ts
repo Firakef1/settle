@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authAPI } from '../services/authAPI';
+import { apiErrorMessage } from '../utils/apiError';
 
 interface User {
   id: string;
@@ -39,12 +40,6 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
 }
 
-// The backend returns errors as { error, code? }; older handlers may use { message }.
-function apiErrorMessage(error: unknown, fallback: string): string {
-  const data = (error as { response?: { data?: { error?: string; message?: string } } })?.response?.data;
-  return data?.error || data?.message || fallback;
-}
-
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -65,8 +60,8 @@ export const useAuthStore = create<AuthState>()(
           }
           set({
             user: response.user,
-            orgs: response.orgs,
-            currentOrg: response.orgs[0] || null,
+            orgs: response.orgs ?? [],
+            currentOrg: response.orgs?.[0] ?? null,
             isAuthenticated: true,
             isLoading: false,
             error: null,
@@ -104,8 +99,8 @@ export const useAuthStore = create<AuthState>()(
           }
           set({
             user: response.user,
-            orgs: response.orgs,
-            currentOrg: response.orgs[0] || null,
+            orgs: response.orgs ?? [],
+            currentOrg: response.orgs?.[0] ?? null,
             isAuthenticated: true,
             isLoading: false,
             error: null,
@@ -188,8 +183,8 @@ export const useAuthStore = create<AuthState>()(
           const { currentOrg } = get();
           set({
             user: response.user,
-            orgs: response.orgs,
-            currentOrg: response.orgs.find((o) => o.org_id === currentOrg?.org_id) ?? response.orgs[0] ?? null,
+            orgs: response.orgs ?? [],
+            currentOrg: response.orgs?.find((o) => o.org_id === currentOrg?.org_id) ?? response.orgs?.[0] ?? null,
             isAuthenticated: true,
             error: null,
           });
