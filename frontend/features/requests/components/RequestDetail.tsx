@@ -81,7 +81,7 @@ export function RequestDetail({ id, aside }: RequestDetailProps) {
       <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="flex min-w-0 flex-col gap-5">
           <Summary request={request} currency={currency} />
-          <Receipts request={request} canUpload={isOwner && request.status === 'draft'} />
+          <Receipts request={request} currency={currency} canUpload={isOwner && request.status === 'draft'} />
           <Timeline request={request} />
           <Discussion request={request} currentUserId={user?.id} currentUserName={user?.name} />
         </div>
@@ -182,12 +182,60 @@ function Field({ label: l, value, sub }: { label: string; value: ReactNode; sub?
   );
 }
 
+interface OcrFields {
+  merchant?: string;
+  date?: string;
+  amount?: string | number;
+  error?: string;
+}
+
+function parseOcr(raw?: string): OcrFields | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as OcrFields;
+  } catch {
+    return null;
+  }
+}
+
+function OcrSummary({ raw, status, requestAmount, currency }: { raw?: string; status: string; requestAmount: number; currency: string }) {
+  const ocr = parseOcr(raw);
+  if (status === 'failed' || ocr?.error) {
+    return <p className="mt-2 text-[12px] text-[#93000a]">Couldn&apos;t read this file{ocr?.error ? ` (${ocr.error})` : ''}. Check it manually.</p>;
+  }
+  if (!ocr || status !== 'completed') return null;
+  const amount = ocr.amount === '' || ocr.amount === undefined ? NaN : Number(ocr.amount);
+  const mismatch = Number.isFinite(amount) && Math.abs(amount - requestAmount) > 0.01;
+  const cells: Array<[string, string]> = [
+    ['Merchant', ocr.merchant || '—'],
+    ['Invoice date', ocr.date || '—'],
+    ['Extracted total', Number.isFinite(amount) ? formatMoney(amount, currency) : '—'],
+  ];
+  return (
+    <div className="mt-3 rounded-xl bg-white p-3">
+      <p className="mb-2 flex items-center gap-1.5 text-[12px] font-semibold text-[#1b1c1a]">
+        <Icon name="document_scanner" size={14} className="text-[#526600]" />
+        Data extracted
+        {mismatch && <span className="ml-auto rounded-full bg-[#ffdad6] px-2 py-0.5 text-[11px] font-bold text-[#93000a]">Differs from request</span>}
+      </p>
+      <dl className="grid grid-cols-3 gap-2">
+        {cells.map(([k, v]) => (
+          <div key={k} className="rounded-lg bg-[#f4f3f0] px-2.5 py-2">
+            <dt className="text-[10px] font-semibold uppercase tracking-[0.55px] text-[#747878]">{k}</dt>
+            <dd className="truncate text-[13px] font-semibold">{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
 function fileName(path: string, requestId: string) {
   const base = path.split('/').pop() ?? path;
   return base.startsWith(`${requestId}_`) ? base.slice(requestId.length + 1) : base;
 }
 
-function Receipts({ request, canUpload }: { request: Request; canUpload: boolean }) {
+function Receipts({ request, currency, canUpload }: { request: Request; currency: string; canUpload: boolean }) {
   const invalidate = useInvalidateRequests();
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -262,17 +310,20 @@ function Receipts({ request, canUpload }: { request: Request; canUpload: boolean
           {request.receipts.map((r) => {
             const name = fileName(r.file_path, request.id);
             return (
-              <li key={r.id} className="flex items-center justify-between gap-3 rounded-xl bg-[#f4f3f0] px-4 py-3">
-                <span className="flex min-w-0 items-center gap-3">
-                  <Icon name={name.toLowerCase().endsWith('.pdf') ? 'picture_as_pdf' : 'image'} size={20} className="text-[#ba1a1a]" />
-                  <span className="min-w-0">
-                    <span className="block truncate text-[13px] font-semibold">{name}</span>
-                    <span className="block text-[12px] text-[#747878]">Uploaded {formatISO(r.created_at)}</span>
+              <li key={r.id} className="rounded-xl bg-[#f4f3f0] px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="flex min-w-0 items-center gap-3">
+                    <Icon name={name.toLowerCase().endsWith('.pdf') ? 'picture_as_pdf' : 'image'} size={20} className="text-[#ba1a1a]" />
+                    <span className="min-w-0">
+                      <span className="block truncate text-[13px] font-semibold">{name}</span>
+                      <span className="block text-[12px] text-[#747878]">Uploaded {formatISO(r.created_at)}</span>
+                    </span>
                   </span>
-                </span>
-                <span className="whitespace-nowrap rounded-full bg-[#e3e2df] px-2 py-0.5 text-[11px] font-semibold text-[#444748]">
-                  OCR {r.ocr_status}
-                </span>
+                  <span className="whitespace-nowrap rounded-full bg-[#e3e2df] px-2 py-0.5 text-[11px] font-semibold text-[#444748]">
+                    OCR {r.ocr_status}
+                  </span>
+                </div>
+                <OcrSummary raw={r.ocr_results} status={r.ocr_status} requestAmount={request.amount} currency={currency} />
               </li>
             );
           })}

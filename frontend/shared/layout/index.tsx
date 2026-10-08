@@ -11,6 +11,7 @@ import type { DashboardSummary, DataResponse, Role } from '../types';
 import { ROLES } from '../utils/constants';
 import { fontBody, fontHeading, initials } from '../utils/fonts';
 import { Icon } from '../components/Icon';
+import { Toaster } from '../components/Toaster';
 
 type BadgeKind = 'pending' | 'atRisk';
 
@@ -103,6 +104,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <div className="mx-auto w-full max-w-[1000px]">{children}</div>
         </main>
       </div>
+      <Toaster />
     </div>
   );
 }

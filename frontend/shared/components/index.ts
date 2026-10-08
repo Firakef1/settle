@@ -4,3 +4,4 @@ export { Icon } from './Icon';
 export { Input } from './Input';
 export { Loader } from './Loader';
 export { Modal } from './Modal';
+export { Toaster } from './Toaster';
