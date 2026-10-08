@@ -7,6 +7,7 @@ import (
 
 	"github.com/Firakef1/settle/backend/internal/approvals"
 	authHandler "github.com/Firakef1/settle/backend/internal/auth/handler"
+	"github.com/Firakef1/settle/backend/internal/auth/oauth"
 	authRepo "github.com/Firakef1/settle/backend/internal/auth/repository"
 	authService "github.com/Firakef1/settle/backend/internal/auth/service"
 	orgHandler "github.com/Firakef1/settle/backend/internal/organaization/handler"
@@ -35,7 +36,7 @@ import (
 // @description     Enter your Bearer token in the format: Bearer {token}
 
 // SetupAuthHandler initializes the auth domain dependencies
-func SetupAuthHandler(ctx context.Context) (*authHandler.AuthHandler, *authHandler.VerificationHandler) {
+func SetupAuthHandler(ctx context.Context) (*authHandler.AuthHandler, *authHandler.VerificationHandler, *authHandler.OAuthHandler) {
 	cfg := config.AppConfig.Email
 
 	hashSvc := sharedService.NewHashService()
@@ -59,7 +60,16 @@ func SetupAuthHandler(ctx context.Context) (*authHandler.AuthHandler, *authHandl
 	authH := authHandler.NewAuthHandler(authSvc, verSvc)
 	verH := authHandler.NewVerificationHandler(verSvc, authSvc)
 
-	return authH, verH
+	// Social sign-in: only providers with credentials in the env are enabled.
+	oauthCfg := config.AppConfig.OAuth
+	providers := oauth.FromConfig(oauthCfg)
+	oauthSvc := authService.NewOAuthService(providers, userRepo, authRepo.NewIdentityRepo(database.DB), authSvc, hashSvc)
+	oauthH := authHandler.NewOAuthHandler(oauthSvc, oauthCfg.PublicBaseURL, oauthCfg.FrontendURL, config.AppConfig.SecretKey)
+	if len(providers) > 0 {
+		log.Printf("OAuth sign-in enabled for: %v (redirect base %s)", oauthSvc.Enabled(), oauthCfg.PublicBaseURL)
+	}
+
+	return authH, verH, oauthH
 }
 
 // SetupOrgHandlers initializes the organization domain dependencies
@@ -148,7 +158,7 @@ func main() {
 	defer cancel()
 
 	// 4. Initialize Domains
-	authH, verH := SetupAuthHandler(ctx)
+	authH, verH, oauthH := SetupAuthHandler(ctx)
 	orgH, memberH, invitationH, auditH, dashboardH, billingH := SetupOrgHandlers()
 	approvalH := approvals.SetupHandler(database.DB)
 	requestH := SetupRequestHandlers()
@@ -156,6 +166,7 @@ func main() {
 	allHandlers := &router.Handlers{
 		Auth:         authH,
 		Verification: verH,
+		OAuth:        oauthH,
 		Org:          orgH,
 		Member:       memberH,
 		Invitation:   invitationH,

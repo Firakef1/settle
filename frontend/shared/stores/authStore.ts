@@ -35,6 +35,7 @@ interface AuthState {
   resetPassword: (email: string, otp: string, newPassword: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshToken: () => Promise<void>;
+  signInWithTokens: (token: string, refreshToken: string) => Promise<void>;
   selectOrganization: (orgId: string) => void;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
@@ -205,6 +206,15 @@ export const useAuthStore = create<AuthState>()(
           });
           throw error;
         }
+      },
+
+      // After "Sign in with Google/Microsoft": the backend hands over a token
+      // pair; refresh once to load the user and their organizations.
+      signInWithTokens: async (token: string, refreshToken: string) => {
+        localStorage.setItem('accessToken', token);
+        localStorage.setItem('refreshToken', refreshToken);
+        set({ currentOrg: null });
+        await get().refreshToken();
       },
 
       selectOrganization: (orgId: string) => {

@@ -42,6 +42,22 @@ func (c EmailConfig) Validate() error {
 	return nil
 }
 
+// OAuthConfig holds the "Sign in with Google / Microsoft" settings.
+// A provider is enabled only when both its client ID and secret are set.
+type OAuthConfig struct {
+	GoogleClientID        string // GOOGLE_CLIENT_ID
+	GoogleClientSecret    string // GOOGLE_CLIENT_SECRET
+	MicrosoftClientID     string // MICROSOFT_CLIENT_ID
+	MicrosoftClientSecret string // MICROSOFT_CLIENT_SECRET
+	MicrosoftTenant       string // MICROSOFT_TENANT (default "common": work, school and personal accounts)
+	// PublicBaseURL is where the browser reaches this API, used to build the
+	// redirect URI registered with each provider:
+	// <PublicBaseURL>/api/v1/auth/oauth/<provider>/callback (OAUTH_PUBLIC_BASE_URL).
+	PublicBaseURL string
+	// FrontendURL is where users land after sign-in (FRONTEND_URL).
+	FrontendURL string
+}
+
 // Config holds all application configuration loaded from environment variables.
 type Config struct {
 	// SecretKey is the JWT signing secret, loaded from Secret_key env var.
@@ -68,6 +84,8 @@ type Config struct {
 	UploadDir string
 	// OCRApiKey is the key for the free OCR API.
 	OCRApiKey string
+	// OAuth holds social sign-in settings.
+	OAuth OAuthConfig
 }
 
 // AppConfig is the global application configuration.
@@ -109,6 +127,16 @@ func Load() {
 		},
 		UploadDir: getEnvOrDefault("UPLOAD_DIR", "./uploads"),
 		OCRApiKey: getEnvOrDefault("OCR_API_KEY", ""),
+		OAuth: OAuthConfig{
+			GoogleClientID:        os.Getenv("GOOGLE_CLIENT_ID"),
+			GoogleClientSecret:    os.Getenv("GOOGLE_CLIENT_SECRET"),
+			MicrosoftClientID:     os.Getenv("MICROSOFT_CLIENT_ID"),
+			MicrosoftClientSecret: os.Getenv("MICROSOFT_CLIENT_SECRET"),
+			MicrosoftTenant:       getEnvOrDefault("MICROSOFT_TENANT", "common"),
+			// The Next.js frontend proxies /api/v1, so by default both are the frontend origin.
+			PublicBaseURL: getEnvOrDefault("OAUTH_PUBLIC_BASE_URL", getEnvOrDefault("FRONTEND_URL", "http://localhost:3000")),
+			FrontendURL:   getEnvOrDefault("FRONTEND_URL", "http://localhost:3000"),
+		},
 	}
 	if err := AppConfig.Email.Validate(); err != nil {
 		log.Fatalf("invalid email configuration: %v", err)

@@ -8,7 +8,7 @@ import (
 )
 
 // RegisterAuthRoutes attaches auth endpoints to the given router group.
-func RegisterAuthRoutes(rg *gin.RouterGroup, authH *authHandler.AuthHandler, verH *authHandler.VerificationHandler) {
+func RegisterAuthRoutes(rg *gin.RouterGroup, authH *authHandler.AuthHandler, verH *authHandler.VerificationHandler, oauthH *authHandler.OAuthHandler) {
 	if authH == nil {
 		return
 	}
@@ -23,6 +23,11 @@ func RegisterAuthRoutes(rg *gin.RouterGroup, authH *authHandler.AuthHandler, ver
 		if verH != nil {
 			auth.POST("/verify-email", verH.VerifyEmail)
 			auth.POST("/resend-verification", verH.ResendCode)
+		}
+		if oauthH != nil {
+			auth.GET("/oauth/providers", oauthH.Providers)
+			auth.GET("/oauth/:provider/start", oauthH.Start)
+			auth.GET("/oauth/:provider/callback", oauthH.Callback)
 		}
 
 		protected := auth.Group("")

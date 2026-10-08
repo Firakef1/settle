@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '../../../shared/stores/authStore';
 import Link from 'next/link';
+import { OAuthButtons } from '../../../features/auth/components/OAuthButtons';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -473,11 +474,7 @@ export default function SignupPage() {
                   </p>
                 </div>
 
-                {/* Bottom Assurance */}
-                <div className="pt-2 flex items-center justify-center gap-1.5 text-neutral-400 text-xs">
-                  <span className="material-symbols-outlined text-[15px]">shield</span>
-                  <span className="font-[Inter]">Enterprise SAML / SSO supported upon team invite</span>
-                </div>
+                <OAuthButtons label="Or sign up with" />
               </div>
             </section>
           </div>
