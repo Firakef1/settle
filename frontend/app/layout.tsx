@@ -27,8 +27,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* App Router root layout: this applies to every page, so no-page-custom-font is a false positive.
+            display=block hides icon ligature text (e.g. "arrow_forward") until the font loads. */}
+        {/* eslint-disable-next-line @next/next/no-page-custom-font, @next/next/google-font-display */}
         <link
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block"
           rel="stylesheet"
         />
       </head>

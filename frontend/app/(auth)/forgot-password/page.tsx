@@ -1,12 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuthStore } from '../../../shared/stores/authStore';
 import Link from 'next/link';
 
 export default function ForgotPasswordPage() {
-  const router = useRouter();
   const { forgotPassword, isLoading, error, clearError } = useAuthStore();
 
   const [email, setEmail] = useState('');
@@ -36,7 +34,7 @@ export default function ForgotPasswordPage() {
     try {
       await forgotPassword(email);
       setShowSuccess(true);
-    } catch (err) {
+    } catch {
       // Error handled by store
     }
   };
@@ -114,7 +112,7 @@ export default function ForgotPasswordPage() {
                   </div>
                   <h1 className="font-[Plus_Jakarta_Sans] text-[26px] font-bold text-[#1C1B1B] tracking-tight">Forgot Password?</h1>
                   <p className="font-[Inter] text-[15px] text-[#525252] leading-relaxed max-w-[320px]">
-                    Enter your verified work email address and we'll send you instructions to reset your password.
+                    Enter your verified work email address and we&apos;ll send you instructions to reset your password.
                   </p>
                 </div>
 
@@ -148,6 +146,13 @@ export default function ForgotPasswordPage() {
                     )}
                   </div>
 
+                  {error && (
+                    <p role="alert" className="text-[#BA1A1A] text-xs flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px]">error</span>
+                      {error}
+                    </p>
+                  )}
+
                   <button
                     className="w-full h-12 bg-[#1C1B1B] hover:bg-[#222222] text-white font-medium text-sm rounded-full shadow-[0_4px_14px_rgba(0,0,0,0.12)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.18)] transition-all flex items-center justify-center gap-2 group active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={isLoading}
@@ -162,7 +167,7 @@ export default function ForgotPasswordPage() {
                 <div className="p-3.5 bg-[#F6F6F4]/80 rounded-xl border border-[#E8E7E3]/80 flex items-start gap-2.5 text-left">
                   <span className="material-symbols-outlined text-[18px] text-[#1C1B1B] shrink-0 mt-0.5">policy</span>
                   <p className="font-[Inter] text-[13px] text-[#525252] leading-relaxed">
-                    Enterprise SSO enabled? Authenticate directly through your organization's identity portal or reach out to internal IT.
+                    Enterprise SSO enabled? Authenticate directly through your organization&apos;s identity portal or reach out to internal IT.
                   </p>
                 </div>
 
@@ -194,7 +199,7 @@ export default function ForgotPasswordPage() {
                   <h2 className="font-[Plus_Jakarta_Sans] text-[26px] font-bold text-[#1C1B1B] tracking-tight">Check Your Email</h2>
                   <div className="space-y-2 max-w-[320px]">
                     <p className="font-[Inter] text-[15px] text-[#525252]">
-                      We've sent a one-time password reset link to
+                      We&apos;ve sent a one-time password reset link to
                     </p>
                     <div className="inline-flex items-center gap-1.5 bg-[#F6F6F4] border border-[#E8E7E3] px-3.5 py-1.5 rounded-full text-xs font-mono font-medium text-[#1C1B1B] break-all">
                       {email || 'sarah.chen@acmelabs.io'}
@@ -230,7 +235,7 @@ export default function ForgotPasswordPage() {
                   </button>
                   <div className="pt-1">
                     <p className="font-[Inter] text-xs text-[#525252]">
-                      Didn't receive email? Check spam folder or{' '}
+                      Didn&apos;t receive email? Check spam folder or{' '}
                       <button
                         className="font-semibold text-[#1C1B1B] underline decoration-[#B5F546] underline-offset-4 decoration-2 hover:opacity-80 ml-1 cursor-pointer"
                         onClick={handleResend}
