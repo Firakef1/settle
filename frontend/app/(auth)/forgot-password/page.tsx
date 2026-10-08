@@ -39,9 +39,12 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  const handleResend = () => {
-    // In real app, call resendVerification
-    console.log('Resending reset link to:', email);
+  const handleResend = async () => {
+    try {
+      await forgotPassword(email);
+    } catch {
+      // Error is shown from the store
+    }
   };
 
   const resetToForm = () => {

@@ -1,59 +1,46 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '../../../shared/stores/authStore';
-import Link from 'next/link';
+import { useAuthHydrated } from '../../../shared/hooks/useAuthHydrated';
+import { orgAPI } from '../../../shared/services/orgAPI';
+import { apiErrorMessage } from '../../../shared/utils/apiError';
+import { CURRENCIES } from '../../../shared/utils/constants';
+import type { Currency } from '../../../shared/types';
 
-interface Organization {
+interface OrgCard {
   id: string;
   name: string;
   slug: string;
   role: string;
-  memberCount: number;
-  lastActivity: string;
-  icon: string;
+  // The API puts only the first membership in the token; there is no switch call.
+  active: boolean;
 }
 
 export default function SelectOrganizationPage() {
   const router = useRouter();
-  const { selectOrganization, user } = useAuthStore();
+  const hydrated = useAuthHydrated();
+  const { selectOrganization, user, orgs, isAuthenticated, refreshToken, logout } = useAuthStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creatingOrg, setCreatingOrg] = useState(false);
   const [orgName, setOrgName] = useState('');
-  const [orgSlug, setOrgSlug] = useState('');
+  const [currency, setCurrency] = useState<Currency>('USD');
+  const [createError, setCreateError] = useState('');
 
-  const organizations: Organization[] = [
-    {
-      id: 'org-1',
-      name: 'Acme Research Lab',
-      slug: 'acme-research-lab',
-      role: 'org_admin',
-      memberCount: 8,
-      lastActivity: '2 hours ago',
-      icon: 'science',
-    },
-    {
-      id: 'org-2',
-      name: 'Northwind Capital',
-      slug: 'northwind-capital',
-      role: 'finance',
-      memberCount: 24,
-      lastActivity: 'Yesterday',
-      icon: 'account_balance',
-    },
-    {
-      id: 'org-3',
-      name: 'BioSynth Therapeutics',
-      slug: 'biosynth-tx',
-      role: 'staff',
-      memberCount: 14,
-      lastActivity: '5 days ago',
-      icon: 'biotech',
-    },
-  ];
+  useEffect(() => {
+    if (hydrated && !isAuthenticated) router.replace('/login');
+  }, [hydrated, isAuthenticated, router]);
+
+  const organizations: OrgCard[] = orgs.map((org, index) => ({
+    id: org.org_id,
+    name: org.org_name,
+    slug: org.org_slug,
+    role: org.role,
+    active: index === 0,
+  }));
 
   const filteredOrgs = organizations.filter(
     org =>
@@ -66,14 +53,30 @@ export default function SelectOrganizationPage() {
     router.push('/dashboard');
   };
 
-  const handleCreateOrg = (e: React.FormEvent) => {
+  const handleCreateOrg = async (e: React.FormEvent) => {
     e.preventDefault();
+    const name = orgName.trim();
+    if (!name) return;
     setCreatingOrg(true);
-    setTimeout(() => {
-      setCreatingOrg(false);
+    setCreateError('');
+    try {
+      await orgAPI.create({ name, currency });
+      // Until the token is refreshed it has no org and no role.
+      await refreshToken();
+      const created = useAuthStore.getState().orgs.find((o) => o.org_name === name);
+      if (created) selectOrganization(created.org_id);
       setShowCreateModal(false);
       router.push('/dashboard');
-    }, 1500);
+    } catch (err) {
+      setCreateError(apiErrorMessage(err, 'Could not create the organization.'));
+    } finally {
+      setCreatingOrg(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    await logout();
+    router.push('/login');
   };
 
   const roleBadge = (role: string) => {
@@ -143,6 +146,12 @@ export default function SelectOrganizationPage() {
             />
           </div>
 
+          {hydrated && organizations.length === 0 && (
+            <p className="mb-6 text-center text-[14px] text-[#575A5A]">
+              You aren&apos;t in an organization yet. Create one below, or ask an admin for an invite link.
+            </p>
+          )}
+
           {/* Org Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             {filteredOrgs.map((org) => {
@@ -150,14 +159,15 @@ export default function SelectOrganizationPage() {
               return (
                 <button
                   key={org.id}
-                  className="text-left flex flex-col justify-between p-5 rounded-2xl bg-white border border-[#E5E4E0] hover:border-[#0E0E0E] hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 group"
+                  className="text-left flex flex-col justify-between p-5 rounded-2xl bg-white border border-[#E5E4E0] hover:border-[#0E0E0E] hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 group disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:border-[#E5E4E0] disabled:hover:shadow-none"
                   onClick={() => handleSelectOrg(org.id)}
+                  disabled={!org.active}
                   type="button"
                 >
                   {/* Top row */}
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <div className="w-11 h-11 rounded-xl bg-[#F6F6F4] border border-[#E5E4E0] flex items-center justify-center text-[#0E0E0E] group-hover:bg-[#0E0E0E] group-hover:text-[#B5F546] transition-colors">
-                      <span className="material-symbols-outlined text-[22px]">{org.icon}</span>
+                      <span className="material-symbols-outlined text-[22px]">domain</span>
                     </div>
                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full ${badge.bg} ${badge.text} text-[11px] font-semibold uppercase tracking-wide`}>
                       <span className="material-symbols-outlined text-[12px]">{badge.icon}</span>
@@ -175,14 +185,17 @@ export default function SelectOrganizationPage() {
 
                   {/* Meta */}
                   <div className="flex items-center justify-between text-[13px] text-[#575A5A] pt-3 border-t border-[#E5E4E0]">
-                    <span className="flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-[15px]">group</span>
-                      {org.memberCount} members
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-[15px]">schedule</span>
-                      {org.lastActivity}
-                    </span>
+                    {org.active ? (
+                      <span className="flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[15px] text-[#526600]">check_circle</span>
+                        Signed in to this organization
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[15px]">block</span>
+                        Switching organizations isn&apos;t available yet
+                      </span>
+                    )}
                   </div>
                 </button>
               );
@@ -207,7 +220,7 @@ export default function SelectOrganizationPage() {
           </div>
 
           {/* No results */}
-          {filteredOrgs.length === 0 && (
+          {filteredOrgs.length === 0 && searchQuery && (
             <div className="w-full py-12 text-center bg-white border border-[#E5E4E0] rounded-2xl mb-6">
               <span className="material-symbols-outlined text-[40px] text-[#E5E4E0] block mb-3">search_off</span>
               <h3 className="text-[16px] font-bold text-[#1B1C1A] mb-1">No results found</h3>
@@ -223,20 +236,14 @@ export default function SelectOrganizationPage() {
 
           {/* Footer links */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-[13px] text-[#575A5A]">
-            <Link
+            <button
               className="flex items-center gap-1.5 hover:text-[#0E0E0E] transition-colors"
-              href="/login"
+              onClick={handleSignOut}
+              type="button"
             >
               <span className="material-symbols-outlined text-[16px]">logout</span>
               Sign in with a different account
-            </Link>
-            <Link
-              className="flex items-center gap-1.5 hover:text-[#0E0E0E] transition-colors"
-              href="#"
-            >
-              <span className="material-symbols-outlined text-[16px]">help</span>
-              Need help?
-            </Link>
+            </button>
           </div>
         </div>
       </main>
@@ -279,28 +286,37 @@ export default function SelectOrganizationPage() {
                   required
                   type="text"
                   value={orgName}
-                  onChange={(e) => {
-                    setOrgName(e.target.value);
-                    setOrgSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''));
-                  }}
+                  maxLength={255}
+                  onChange={(e) => setOrgName(e.target.value)}
                 />
               </div>
 
               <div>
-                <label className="text-[12px] font-semibold text-[#1B1C1A] uppercase tracking-wide block mb-1.5">
-                  URL Slug
+                <label
+                  className="text-[12px] font-semibold text-[#1B1C1A] uppercase tracking-wide block mb-1.5"
+                  htmlFor="org-currency"
+                >
+                  Currency
                 </label>
-                <div className="flex items-center h-11 bg-[#F6F6F4] border border-[#E5E4E0] rounded-xl overflow-hidden focus-within:border-[#0E0E0E] focus-within:bg-white transition-all">
-                  <span className="pl-3.5 pr-1 text-[#575A5A] text-sm whitespace-nowrap">settle.app/</span>
-                  <input
-                    className="flex-1 pr-3.5 bg-transparent text-[#1B1C1A] text-sm focus:outline-none"
-                    placeholder="acme-inc"
-                    type="text"
-                    value={orgSlug}
-                    onChange={(e) => setOrgSlug(e.target.value)}
-                  />
-                </div>
+                <select
+                  id="org-currency"
+                  className="w-full h-11 px-3.5 bg-[#F6F6F4] border border-[#E5E4E0] rounded-xl text-[#1B1C1A] text-sm focus:outline-none focus:border-[#0E0E0E] focus:bg-white transition-all"
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value as Currency)}
+                >
+                  {Object.keys(CURRENCIES).map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+                <p className="mt-1.5 text-[12px] text-[#575A5A]">Requests and payouts are tracked in this currency. You can change it later in Settings.</p>
               </div>
+
+              {createError && (
+                <p role="alert" className="text-[#BA1A1A] text-xs flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[14px]">error</span>
+                  {createError}
+                </p>
+              )}
 
               <div className="flex items-center gap-3 pt-1">
                 <button
@@ -334,11 +350,6 @@ export default function SelectOrganizationPage() {
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-[#B5F546]" />
             <span>© 2025 Settle Technologies Inc.</span>
-          </div>
-          <div className="flex items-center gap-5">
-            <Link className="hover:text-[#1B1C1A] transition-colors" href="#">Privacy</Link>
-            <Link className="hover:text-[#1B1C1A] transition-colors" href="#">Terms</Link>
-            <Link className="hover:text-[#1B1C1A] transition-colors" href="#">Security</Link>
           </div>
         </div>
       </footer>

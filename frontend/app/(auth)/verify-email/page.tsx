@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { authAPI } from '../../../shared/services/authAPI';
 import { useAuthStore } from '../../../shared/stores/authStore';
 import Link from 'next/link';
 
@@ -81,9 +82,13 @@ function VerifyEmailContent() {
     }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
     clearError();
-    // In a real app, call authAPI.resendVerification(email)
+    try {
+      await authAPI.resendVerification(email);
+    } catch {
+      // The API answers the same for unknown emails; ignore network hiccups here.
+    }
     setResendTimer(45);
     setOtp(['', '', '', '', '', '']);
     inputRefs.current[0]?.focus();
@@ -266,39 +271,6 @@ function VerifyEmailContent() {
               <span className="material-symbols-outlined text-[16px]">edit_square</span>
               <span>Wrong email? Change email address</span>
             </Link>
-          </div>
-
-          {/* State Simulator */}
-          <div className="w-full mt-6 p-3 rounded-xl bg-[#F0EFEA] border border-[#e5e7eb] flex flex-col gap-2">
-            <div className="flex items-center justify-between text-[#525252]">
-              <span className="font-[Inter] text-[12px] font-semibold flex items-center gap-1 text-[#0e0e0e]">
-                <span className="material-symbols-outlined text-[14px]">tune</span> State Simulator
-              </span>
-              <span className="font-[Inter] text-[11px]">Preview Edge Cases</span>
-            </div>
-            <div className="grid grid-cols-3 gap-1.5">
-              <button
-                type="button"
-                onClick={() => { setShowAlert(false); const codes = ['7','4','2','8','9','1']; codes.forEach((c,i) => setOtp(p => { const n = [...p]; n[i] = c; return n; })); }}
-                className="px-2 py-1.5 rounded-lg bg-white hover:bg-[#efeeeb] text-[#0e0e0e] border border-[#e5e7eb] font-[Inter] text-[12px] font-medium transition-colors text-center"
-              >
-                Active
-              </button>
-              <button
-                type="button"
-                onClick={() => { setAlertTitle('Invalid verification code'); setAlertDescription('The numbers entered do not match our records. Please try again.'); setShowAlert(true); }}
-                className="px-2 py-1.5 rounded-lg bg-white hover:bg-[#FFDAD6] text-[#93000A] border border-[#e5e7eb] font-[Inter] text-[12px] font-medium transition-colors text-center"
-              >
-                Invalid Code
-              </button>
-              <button
-                type="button"
-                onClick={() => { setAlertTitle('Code expired'); setAlertDescription('This 6-digit authorization token has expired. Request a new one to continue.'); setShowAlert(true); }}
-                className="px-2 py-1.5 rounded-lg bg-white hover:bg-[#FFDAD6] text-[#93000A] border border-[#e5e7eb] font-[Inter] text-[12px] font-medium transition-colors text-center"
-              >
-                Expired Code
-              </button>
-            </div>
           </div>
         </div>
 

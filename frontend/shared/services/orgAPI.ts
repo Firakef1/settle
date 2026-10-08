@@ -1,180 +1,126 @@
 import api from './api';
+import type {
+  AuditLogEntry,
+  Currency,
+  DataResponse,
+  Invitation,
+  Member,
+  MessageResponse,
+  Organization,
+  OrgStats,
+  PaginatedResponse,
+  Plan,
+  PlanId,
+  Role,
+} from '../types';
 
-// Organization Types
-export interface Organization {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  logo_url?: string;
-  created_at: string;
-  updated_at: string;
-  member_count: number;
-  settings: OrganizationSettings;
-}
-
-export interface OrganizationSettings {
-  require_approval_for_expenses: boolean;
-  default_currency: string;
-  expense_categories: string[];
-  approval_workflow: 'single' | 'multi' | 'department';
-  auto_approve_limit?: number;
-  notification_preferences: NotificationSettings;
-}
-
-export interface NotificationSettings {
-  email_notifications: boolean;
-  slack_integration: boolean;
-  webhook_url?: string;
-}
+// Shapes and routes follow backend/docs/Api-contract.md, section 2 and 5.
 
 export interface CreateOrganizationRequest {
   name: string;
-  slug: string;
-  description?: string;
-  settings?: Partial<OrganizationSettings>;
+  currency: Currency;
 }
 
 export interface UpdateOrganizationRequest {
   name?: string;
-  description?: string;
-  logo_url?: string;
-  settings?: Partial<OrganizationSettings>;
-}
-
-export interface OrganizationMember {
-  id: string;
-  user_id: string;
-  org_id: string;
-  email: string;
-  name: string;
-  role: 'admin' | 'manager' | 'member';
-  department?: string;
-  status: 'active' | 'pending' | 'inactive';
-  joined_at: string;
-  last_active?: string;
+  currency?: Currency;
 }
 
 export interface InviteRequest {
   email: string;
-  role: 'admin' | 'manager' | 'member';
-  department?: string;
-}
-
-export interface InviteResponse {
-  id: string;
-  email: string;
-  role: string;
-  department?: string;
-  invited_by: string;
-  expires_at: string;
-  created_at: string;
+  role: Exclude<Role, 'org_admin'>;
 }
 
 export interface AcceptInviteRequest {
-  invite_id: string;
-  name: string;
-  password: string;
+  name?: string;
+  password?: string;
 }
 
-export interface UpdateMemberRequest {
-  role?: 'admin' | 'manager' | 'member';
-  department?: string;
-  status?: 'active' | 'inactive';
+export interface PlanChange {
+  org_id: string;
+  plan: PlanId;
+  updated_at: string;
 }
 
-export interface ApiError {
-  message: string;
-  code?: string;
+export interface AuditLogQuery {
+  action?: string;
+  actor_id?: string;
+  start_date?: string;
+  end_date?: string;
+  page?: number;
+  limit?: number;
 }
 
-// Organization API functions
 export const orgAPI = {
-  // Create organization
   async create(data: CreateOrganizationRequest): Promise<Organization> {
-    const response = await api.post('/organizations', data);
-    return response.data;
+    const response = await api.post<DataResponse<Organization>>('/organizations', data);
+    return response.data.data;
   },
 
-  // Get organization details
-  async getById(orgId: string): Promise<Organization> {
-    const response = await api.get(`/organizations/${orgId}`);
-    return response.data;
+  async get(orgId: string): Promise<Organization> {
+    const response = await api.get<DataResponse<Organization>>(`/organizations/${orgId}`);
+    return response.data.data;
   },
 
-  // Get user's organizations
-  async getUserOrgs(): Promise<Organization[]> {
-    const response = await api.get('/organizations');
-    return response.data;
-  },
-
-  // Update organization
+  // org_admin only
   async update(orgId: string, data: UpdateOrganizationRequest): Promise<Organization> {
-    const response = await api.patch(`/organizations/${orgId}`, data);
+    const response = await api.put<DataResponse<Organization>>(`/organizations/${orgId}`, data);
+    return response.data.data;
+  },
+
+  // org_admin or finance
+  async getStats(orgId: string): Promise<OrgStats> {
+    const response = await api.get<DataResponse<OrgStats>>(`/organizations/${orgId}/stats`);
+    return response.data.data;
+  },
+
+  // org_admin or finance
+  async listMembers(orgId: string): Promise<Member[]> {
+    const response = await api.get<DataResponse<Member[]>>(`/organizations/${orgId}/members`);
+    return response.data.data;
+  },
+
+  // org_admin only. No email is sent: build the link from `token`.
+  async invite(orgId: string, data: InviteRequest): Promise<Invitation> {
+    const response = await api.post<DataResponse<Invitation>>(`/organizations/${orgId}/invitations`, data);
+    return response.data.data;
+  },
+
+  // Public. Does not sign the user in.
+  async acceptInvite(token: string, data: AcceptInviteRequest): Promise<Member> {
+    const response = await api.post<DataResponse<Member>>(`/invitations/${token}/accept`, data);
+    return response.data.data;
+  },
+
+  // org_admin only. 403 when the target is the last admin.
+  async updateRole(orgId: string, userId: string, role: Exclude<Role, 'org_admin'>): Promise<MessageResponse> {
+    const response = await api.put<MessageResponse>(`/organizations/${orgId}/members/${userId}/role`, { role });
     return response.data;
   },
 
-  // Delete organization
-  async delete(orgId: string): Promise<{ message: string }> {
-    const response = await api.delete(`/organizations/${orgId}`);
+  // org_admin only. 403 when the target is the last admin.
+  async removeMember(orgId: string, userId: string): Promise<MessageResponse> {
+    const response = await api.delete<MessageResponse>(`/organizations/${orgId}/members/${userId}`);
     return response.data;
   },
 
-  // Invite Management
-  async createInvite(orgId: string, data: InviteRequest): Promise<InviteResponse> {
-    const response = await api.post(`/organizations/${orgId}/invites`, data);
-    return response.data;
+  // Public
+  async listPlans(): Promise<Plan[]> {
+    const response = await api.get<DataResponse<Plan[]>>('/billing/plans');
+    return response.data.data;
   },
 
-  async getInvites(orgId: string): Promise<InviteResponse[]> {
-    const response = await api.get(`/organizations/${orgId}/invites`);
-    return response.data;
+  // org_admin only
+  async changePlan(orgId: string, plan: PlanId): Promise<PlanChange> {
+    const response = await api.put<DataResponse<PlanChange>>(`/organizations/${orgId}/plan`, { plan });
+    return response.data.data;
   },
 
-  async cancelInvite(orgId: string, inviteId: string): Promise<{ message: string }> {
-    const response = await api.delete(`/organizations/${orgId}/invites/${inviteId}`);
+  // org_admin or finance
+  async getAuditLog(orgId: string, query: AuditLogQuery = {}): Promise<PaginatedResponse<AuditLogEntry>> {
+    const response = await api.get<PaginatedResponse<AuditLogEntry>>(`/organizations/${orgId}/audit-log`, {
+      params: query,
+    });
     return response.data;
   },
-
-  async acceptInvite(data: AcceptInviteRequest): Promise<{ message: string; organization: Organization }> {
-    const response = await api.post('/invites/accept', data);
-    return response.data;
-  },
-
-  async getInviteDetails(inviteId: string): Promise<InviteResponse & { org_name: string }> {
-    const response = await api.get(`/invites/${inviteId}`);
-    return response.data;
-  },
-
-  // Member Management
-  async getMembers(orgId: string): Promise<OrganizationMember[]> {
-    const response = await api.get(`/organizations/${orgId}/members`);
-    return response.data;
-  },
-
-  async getMember(orgId: string, memberId: string): Promise<OrganizationMember> {
-    const response = await api.get(`/organizations/${orgId}/members/${memberId}`);
-    return response.data;
-  },
-
-  async updateMember(orgId: string, memberId: string, data: UpdateMemberRequest): Promise<OrganizationMember> {
-    const response = await api.patch(`/organizations/${orgId}/members/${memberId}`, data);
-    return response.data;
-  },
-
-  async removeMember(orgId: string, memberId: string): Promise<{ message: string }> {
-    const response = await api.delete(`/organizations/${orgId}/members/${memberId}`);
-    return response.data;
-  },
-
-  // Settings Management
-  async updateSettings(orgId: string, settings: Partial<OrganizationSettings>): Promise<Organization> {
-    const response = await api.patch(`/organizations/${orgId}/settings`, settings);
-    return response.data;
-  },
-
-  async getSettings(orgId: string): Promise<OrganizationSettings> {
-    const response = await api.get(`/organizations/${orgId}/settings`);
-    return response.data;
-  }
 };

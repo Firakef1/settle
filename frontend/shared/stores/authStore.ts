@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authAPI } from '../services/authAPI';
+import { apiErrorMessage } from '../utils/apiError';
 
 interface User {
   id: string;
@@ -20,7 +21,6 @@ interface Organization {
 }
 
 interface AuthState {
-  // State
   user: User | null;
   orgs: Organization[];
   currentOrg: Organization | null;
@@ -28,7 +28,6 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
 
-  // Actions
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
   verifyEmail: (email: string, code: string) => Promise<void>;
@@ -41,16 +40,9 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
 }
 
-// The backend returns errors as { error, code? }; older handlers may use { message }.
-function apiErrorMessage(error: unknown, fallback: string): string {
-  const data = (error as { response?: { data?: { error?: string; message?: string } } })?.response?.data;
-  return data?.error || data?.message || fallback;
-}
-
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
-      // Initial state
       user: null,
       orgs: [],
       currentOrg: null,
@@ -58,26 +50,23 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
       error: null,
 
-      // Login
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
         try {
           const response = await authAPI.login({ email, password });
-
-          // Store tokens
-          localStorage.setItem('accessToken', response.token);
-          localStorage.setItem('refreshToken', response.refresh_token);
-
-          // Update state
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('accessToken', response.token);
+            localStorage.setItem('refreshToken', response.refresh_token);
+          }
           set({
             user: response.user,
-            orgs: response.orgs,
-            currentOrg: response.orgs[0] || null, // Select first org by default
+            orgs: response.orgs ?? [],
+            currentOrg: response.orgs?.[0] ?? null,
             isAuthenticated: true,
             isLoading: false,
             error: null,
           });
-        } catch (error) {
+        } catch (error: unknown) {
           set({
             isLoading: false,
             error: apiErrorMessage(error, 'Login failed. Please try again.'),
@@ -86,13 +75,12 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      // Signup
       signup: async (name: string, email: string, password: string) => {
         set({ isLoading: true, error: null });
         try {
           await authAPI.signup({ name, email, password });
           set({ isLoading: false, error: null });
-        } catch (error) {
+        } catch (error: unknown) {
           set({
             isLoading: false,
             error: apiErrorMessage(error, 'Signup failed. Please try again.'),
@@ -101,26 +89,23 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      // Verify Email
       verifyEmail: async (email: string, verification_code: string) => {
         set({ isLoading: true, error: null });
         try {
           const response = await authAPI.verifyEmail({ email, verification_code });
-
-          // Store tokens
-          localStorage.setItem('accessToken', response.token);
-          localStorage.setItem('refreshToken', response.refresh_token);
-
-          // Update state
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('accessToken', response.token);
+            localStorage.setItem('refreshToken', response.refresh_token);
+          }
           set({
             user: response.user,
-            orgs: response.orgs,
-            currentOrg: response.orgs[0] || null,
+            orgs: response.orgs ?? [],
+            currentOrg: response.orgs?.[0] ?? null,
             isAuthenticated: true,
             isLoading: false,
             error: null,
           });
-        } catch (error) {
+        } catch (error: unknown) {
           set({
             isLoading: false,
             error: apiErrorMessage(error, 'Verification failed. Please try again.'),
@@ -129,13 +114,12 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      // Forgot Password
       forgotPassword: async (email: string) => {
         set({ isLoading: true, error: null });
         try {
           await authAPI.forgotPassword({ email });
           set({ isLoading: false, error: null });
-        } catch (error) {
+        } catch (error: unknown) {
           set({
             isLoading: false,
             error: apiErrorMessage(error, 'Failed to send reset email.'),
@@ -144,13 +128,12 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      // Reset Password
       resetPassword: async (email: string, otp: string, new_password: string) => {
         set({ isLoading: true, error: null });
         try {
           await authAPI.resetPassword({ email, otp, new_password });
           set({ isLoading: false, error: null });
-        } catch (error) {
+        } catch (error: unknown) {
           set({
             isLoading: false,
             error: apiErrorMessage(error, 'Password reset failed.'),
@@ -159,21 +142,22 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      // Logout
       logout: async () => {
         set({ isLoading: true });
         try {
-          const refreshToken = localStorage.getItem('refreshToken');
-          if (refreshToken) {
-            await authAPI.logout(refreshToken);
+          if (typeof window !== 'undefined') {
+            const refreshToken = localStorage.getItem('refreshToken');
+            if (refreshToken) {
+              await authAPI.logout(refreshToken);
+            }
           }
         } catch (error) {
-          // Continue with logout even if API call fails
           console.warn('Logout API call failed:', error);
         } finally {
-          // Clear everything
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+          }
           set({
             user: null,
             orgs: [],
@@ -185,29 +169,26 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      // Refresh Token
       refreshToken: async () => {
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (!refreshToken) {
-          throw new Error('No refresh token available');
-        }
+        if (typeof window === 'undefined') throw new Error('Cannot refresh token on server side');
 
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (!refreshToken) throw new Error('No refresh token available');
         try {
           const response = await authAPI.refreshToken({ refresh_token: refreshToken });
-
-          // Store new tokens
           localStorage.setItem('accessToken', response.token);
           localStorage.setItem('refreshToken', response.refresh_token);
-
-          // Update state
+          // The new token carries the first org (e.g. right after creating one),
+          // so keep the current org in step with it.
+          const { currentOrg } = get();
           set({
             user: response.user,
-            orgs: response.orgs,
+            orgs: response.orgs ?? [],
+            currentOrg: response.orgs?.find((o) => o.org_id === currentOrg?.org_id) ?? response.orgs?.[0] ?? null,
             isAuthenticated: true,
             error: null,
           });
-        } catch (error) {
-          // Refresh failed, clear auth state
+        } catch (error: unknown) {
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
           set({
@@ -221,7 +202,6 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      // Select Organization
       selectOrganization: (orgId: string) => {
         const { orgs } = get();
         const selectedOrg = orgs.find(org => org.org_id === orgId);
@@ -230,10 +210,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      // Clear Error
       clearError: () => set({ error: null }),
-
-      // Set Loading
       setLoading: (loading: boolean) => set({ isLoading: loading }),
     }),
     {

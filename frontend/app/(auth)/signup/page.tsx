@@ -83,7 +83,7 @@ export default function SignupPage() {
       await signup(formData.name, formData.email, formData.password);
 
       // Redirect to email verification
-      router.push(`/auth/verify-email?email=${encodeURIComponent(formData.email)}`);
+      router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
     } catch {
       // Error is handled by the store
     }
